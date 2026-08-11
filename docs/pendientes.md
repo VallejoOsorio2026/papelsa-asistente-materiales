@@ -6,11 +6,13 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 |---|---|---|---|
 | PENDIENTE-001 | Semántica exacta de la columna `XCentro` y cómo se representa la disponibilidad en centros distintos al de la fila. No se infiere: se resuelve observando datos reales. | Abierto | Fase 5 |
 | PENDIENTE-002 | Almacén físico del Corrugador. Valor asumido de forma **provisional**, no validado. No presentar como dato confirmado. | Abierto | Confirmación del responsable |
-| PENDIENTE-003 | Autorización institucional para alojar el catálogo de materiales en un servicio en la nube externo. Tras ADR-005 el alcance se reduce a catálogo técnico con existencias, sin costos ni consumos. | Abierto | Antes de Fase 5 |
+| PENDIENTE-003 | Autorización institucional para alojar el catálogo de materiales en un servicio en la nube externo. | ✅ Cerrado | Cerrado el 2026-08-11 |
 
 ## Cerrados
 
-_(ninguno todavía)_
+| ID | Descripción | Cerrado el | Resolución |
+|---|---|---|---|
+| PENDIENTE-003 | Autorización para alojar el catálogo en la nube | 2026-08-11 | Autorización obtenida. El alcance quedó reducido a catálogo técnico con existencias y ubicación, sin costos ni consumos (ADR-005) |
 
 ## Mejoras futuras identificadas
 
