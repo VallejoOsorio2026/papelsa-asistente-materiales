@@ -1,0 +1,42 @@
+# ============================================================
+#  PAPELSA - Asistente de Materiales SAP
+#  Archivos que NUNCA deben entrar a este repositorio publico
+# ============================================================
+
+# --- DATOS DE SAP (motivo principal de este archivo) ---
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+*.tsv
+*.txt
+*.json
+!data/README.md
+!package.json
+
+# --- CREDENCIALES Y SECRETOS ---
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+secrets*
+credenciales*
+*secret*
+*password*
+
+# --- ARCHIVOS TEMPORALES DE OFICINA ---
+~$*
+*.tmp
+*.bak
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# --- HERRAMIENTAS (por si en el futuro se usan) ---
+node_modules/
+dist/
+build/
+.vscode/
+.idea/
