@@ -13,6 +13,48 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ## [No publicado]
 
 ### En construcción
+- Fase 4 — Usuarios y control de registro
+
+---
+
+## [v0.2.0] — 2026-08-11
+
+### Añadido
+- Estructura documental del repositorio: reglas de negocio, pendientes,
+  seguridad y plantilla de reporte de errores
+- Proyecto de base de datos creado y operativo
+- Extensiones `pg_trgm` (similitud de texto) y `unaccent` (sin tildes)
+- Esquema completo: **15 tablas** en cuatro zonas — datos SAP, operación,
+  aprendizaje y gobierno
+- **16 índices**, incluido el índice difuso sobre texto normalizado
+- Row Level Security activo en las 15 tablas, con políticas por rol
+- Función `normalizar_texto()` para la representación de búsqueda
+- Funciones de mantenimiento: `ping()`, `cerrar_solicitudes_inactivas()`
+  y `version_datos_activa()`
+- Cinco parámetros iniciales en la tabla de configuración
+- Guiones SQL versionados en `sql/`, reproducibles desde cero
+
+### Decisiones adoptadas
+- **ADR-006** — El inventario no admite modificación. Al no existir política
+  de actualización sobre `inventario_materiales`, ni el administrador puede
+  editar una fila de SAP. Corregir un dato exige una nueva carga completa.
+  Convierte RN-011 en una garantía estructural, no en una norma de conducta
+- **ADR-007** — Los perfiles no se eliminan, se desactivan. Así el historial
+  de solicitudes nunca queda huérfano
+- **ADR-008** — El motor de búsqueda se pospone a la Fase 7, después de
+  observar datos reales. Construirlo antes obligaría a reescribirlo. El
+  archivo `006_search.sql` queda reservado
+
+### Pendientes
+- **PENDIENTE-003 — CERRADO.** Autorización institucional obtenida para
+  alojar el catálogo de materiales en el servicio en la nube
+- **PENDIENTE-001** — Abierto. Semántica de `XCentro`. Se resuelve en Fase 5
+- **PENDIENTE-002** — Abierto. Almacén físico del Corrugador, sin validar
+
+### Notas de infraestructura
+- Región del proyecto: `us-west-2` (Oregón). Añade latencia frente a la costa
+  este, sin impacto perceptible en consultas puntuales. No se rehace
+- No se ha generado clave secreta de servidor y no está prevista
 - Fase 1 — Estructura del repositorio y documentación base
 
 ---
