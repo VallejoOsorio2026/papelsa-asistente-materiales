@@ -5,8 +5,10 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | ID | Descripción | Estado | Se resuelve en |
 |---|---|---|---|
 | PENDIENTE-001 | Semántica exacta de la columna `XCentro` y cómo se representa la disponibilidad en centros distintos al de la fila. No se infiere: se resuelve observando datos reales. | Abierto | Fase 5 |
-| PENDIENTE-002 | Almacén físico del Corrugador. Valor asumido de forma **provisional**, no validado. No presentar como dato confirmado. | Abierto | Confirmación del responsable |
+| PENDIENTE-002 | Almacén físico del Corrugador. La muestra de 500 filas respalda el valor asumido: 124 filas cruzan ese centro con ese almacén, sin excepciones. Falta confirmación formal antes de darlo por validado. | Abierto · con evidencia | Confirmación del responsable |
 | PENDIENTE-003 | Autorización institucional para alojar el catálogo de materiales en un servicio en la nube externo. | ✅ Cerrado | Cerrado el 2026-08-11 |
+| PENDIENTE-004 | Formato numérico mixto en el archivo de origen. Los valores llegan como texto: unos con punto de miles y coma decimal (`3.514.207,24`), otros como entero limpio. Ocho casos son ambiguos porque el punto puede ser separador de miles o decimal (`12.192`, `8.2`). No se interpretan por conjetura: se cargan marcados para revisión y la aplicación advierte al mostrarlos. | Abierto | Consulta con el responsable de SAP |
+| PENDIENTE-005 | Códigos de almacén no documentados en la definición inicial: `P992`, `P122`, `P123`, `P212`, `P213`, `PST`, `PBT`, `PPT`, `PCC`. Poco frecuentes (entre 1 y 11 filas cada uno). Sin impacto en la búsqueda; afectan solo a la clasificación por ubicación. | Abierto | Consulta con el responsable de SAP |
 
 ## Cerrados
 
