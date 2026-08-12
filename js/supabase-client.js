@@ -4,6 +4,10 @@
 // ============================================================
 // Crea la conexion con la base de datos y comprueba que
 // responde. La libreria se carga desde index.html.
+//
+// IMPORTANTE: este archivo NO lleva credenciales. La URL y la
+// clave viven unicamente en config.js. Aqui solo se comprueba
+// que tengan un formato valido.
 // ============================================================
 
 let db = null;
@@ -19,16 +23,26 @@ function iniciarCliente() {
     return false;
   }
 
-  if (CONFIG.SUPABASE_URL.startsWith('https://mqthgvholgjfyoiczgqy.supabase.co/rest/v1/') ||
-      CONFIG.SUPABASE_KEY.startsWith('sb_publishable_y3w_8r-3RfuL4NypOmkbyA_ZkGzVP7s')) {
-    console.error('Faltan los valores en config.js');
+  const url   = (CONFIG.SUPABASE_URL || '').trim();
+  const clave = (CONFIG.SUPABASE_KEY || '').trim();
+
+  if (!url.startsWith('https://')) {
+    console.error('La URL debe empezar por https:// . Valor actual: ' + url);
     return false;
   }
 
-  db = supabase.createClient(
-    CONFIG.SUPABASE_URL,
-    CONFIG.SUPABASE_KEY
-  );
+  if (url.includes('/rest/') || url.endsWith('/')) {
+    console.error('La URL no debe llevar rutas ni barra final. ' +
+                  'Debe terminar en .supabase.co');
+    return false;
+  }
+
+  if (clave.length < 20) {
+    console.error('La clave publicable parece incompleta.');
+    return false;
+  }
+
+  db = supabase.createClient(url, clave);
 
   console.log('Cliente iniciado. Version ' + CONFIG.VERSION_SISTEMA);
   return true;
