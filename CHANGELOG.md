@@ -13,6 +13,57 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ## [No publicado]
 
 ### En construcción
+- Fase 5 — Carga del inventario
+
+---
+
+## [v0.3.0] — 2026-08-12
+
+### Añadido
+- Aplicación web publicada y accesible desde navegador
+- Pantalla de acceso con correo y contraseña
+- Sesión persistente: no se piden credenciales en cada visita
+- Panel de estado del sistema: conexión, versión y volumen de datos
+- Hoja de estilos con énfasis en la legibilidad de códigos y cantidades
+  (cifras tabulares, tipografía monoespaciada, sin fuentes externas)
+
+### Verificado
+- **Aislamiento en producción.** Sin sesión iniciada, y con la dirección
+  de la aplicación y la clave publicable a la vista, una consulta directa
+  a la base de datos devuelve cero filas
+
+### Corregido
+- La URL del proyecto incluía la ruta del endpoint, que la librería añade
+  por su cuenta
+- Credenciales duplicadas en un segundo archivo. Ahora residen únicamente
+  en el archivo de configuración
+- La validación de arranque usaba textos de relleno; ahora comprueba el
+  formato real e indica con precisión qué valor está mal
+
+### Conocido
+- Al recargar, la pantalla de acceso aparece un instante antes de
+  restaurarse la sesión. Sin impacto funcional. Severidad: menor
+
+### Hallazgos de la muestra de inventario (500 filas)
+- **PENDIENTE-002 — resuelto en la práctica.** El cruce entre centro y
+  almacén es consistente y sin excepciones en las 124 filas del Corrugador.
+  Pendiente únicamente de confirmación formal
+- **PENDIENTE-001 — sigue abierto.** La columna `XCentro` no es un centro
+  de costos, sino un número entero de 0 a 15. Los valores altos aparecen
+  en consumibles genéricos y los bajos en repuestos específicos. Hipótesis:
+  cuenta de ubicaciones adicionales donde existe el material. **No se
+  implementa lógica alguna sobre esta columna hasta confirmarlo**
+- **PENDIENTE-004 — nuevo.** Los valores numéricos llegan como texto con
+  formato mixto. Ocho casos son ambiguos porque el punto puede significar
+  separador de miles o decimal. Se cargarán marcados para revisión, nunca
+  interpretados por conjetura
+- **PENDIENTE-005 — nuevo.** Aparecen códigos de almacén no documentados
+  en la definición inicial. Poco frecuentes, sin impacto en la búsqueda
+- **Incidencia de origen.** Seis códigos antiguos fueron convertidos en
+  fechas por la hoja de cálculo. Al preparar el archivo, esa columna debe
+  importarse como texto
+
+### En construcción
 - Fase 4 — Usuarios y control de registro
 
 ---
