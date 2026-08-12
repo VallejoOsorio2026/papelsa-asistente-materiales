@@ -33,14 +33,27 @@ de la base de datos, no en este repositorio.
 
 - **RN-011** — Los datos provenientes de SAP son inmutables. La normalización se guarda
   en columnas auxiliares; el texto original nunca se sobrescribe.
-- **RN-012** — Toda carga valida la presencia y el orden exacto de **21 encabezados**,
-  la existencia de la columna clave, la unicidad de códigos y la cantidad de registros.
-  Si algo falla, la carga se rechaza completa.
+- **RN-012** — Toda carga valida la presencia y el orden exacto de **21 encabezados**
+  (ADR-005), la existencia de la columna clave, la unicidad de códigos y la cantidad
+  de registros. Si algo falla, la carga se rechaza completa. El separador del archivo
+  se detecta automáticamente: coma, punto y coma o tabulador.
 - **RN-013** — La versión de datos anterior permanece activa hasta que la nueva se valida
   por completo. Ante una carga fallida, el sistema sigue operando con la última versión
   válida. Nunca opera con una actualización parcial.
 - **RN-014** — El código de material es único por registro. No se asume que un mismo
   código se repita en varias filas para representar bodegas distintas.
+  - **RN-031** — Conversión de valores numéricos. El archivo de origen entrega los
+  números como texto con formato mixto: unos con punto de miles y coma decimal
+  (`3.514.207,24`), otros como entero limpio. Si la unidad de medida es de conteo
+  (`UND` y equivalentes), el resultado se redondea a entero: no existen 8,2 guantes.
+  Para unidades continuas (`KG`, `MT`, `LT`, `M`) los decimales se conservan.
+  Esta regla resuelve además los valores donde el punto era interpretable de dos
+  formas, porque corresponden casi siempre a artículos contables.
+
+- **RN-032** — Códigos de almacén no documentados. Un material nunca se oculta por
+  desconocerse su ubicación. Los códigos no reconocidos se clasifican como
+  «otra ubicación» y el material se muestra igual. Es preferible presentar un
+  material sin saber exactamente dónde está que no presentarlo.
 
 ## Búsqueda y ranking
 
@@ -54,8 +67,20 @@ de la base de datos, no en este repositorio.
   después otras ubicaciones de planta, después sedes remotas.
 - **RN-019** — Ningún material se oculta por estar en una sede remota. Se distingue
   con claridad entre **disponibilidad inmediata** y **disponibilidad que exige traslado**.
-- **RN-020** — No se implementa lógica de material reservado. La base actual no permite
-  determinarlo de forma confiable y no se infiere desde otras columnas.
+- **RN-020** — Derogada. Sustituida por RN-030.
+- - **RN-030** — Clasificación de disponibilidad. Sustituye a RN-020.
+
+  **Disponible:** `stock Libre_Utilización` + `Stock consignación`. Ambos están
+  físicamente en planta y el ingeniero puede disponer de ellos.
+
+  **Comprometido:** `Stock Proyectos`. Existe físicamente, pero ya está asignado
+  a un proyecto. **No se oculta ni se suma al disponible.** Se presenta por
+  separado con una advertencia explícita: el material existe, pero identificar a
+  quién está asignado y valorar prioridades exige pasos adicionales.
+
+  Fundamento: en una parada de máquina de madrugada, saber que un material existe
+  aunque esté comprometido puede ser justo la información que se necesita. Ocultarlo
+  sería decidir por el ingeniero.
 
 ## Confianza
 
