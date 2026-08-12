@@ -37,6 +37,17 @@ function conectarBotones() {
 
   document.getElementById('boton-salir')
           .addEventListener('click', salir);
+ const botonBuscar = document.getElementById('boton-buscar');
+  if (botonBuscar) {
+    botonBuscar.addEventListener('click', ejecutarBusqueda);
+  }
+
+  const campoConsulta = document.getElementById('consulta');
+  if (campoConsulta) {
+    campoConsulta.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') ejecutarBusqueda();
+    });
+  } 
   const botonCargar = document.getElementById('boton-cargar');
   if (botonCargar) {
     botonCargar.addEventListener('click', cargarInventario);
@@ -233,4 +244,37 @@ async function revertirInventario() {
 
   mostrarAviso('aviso-carga', data.mensaje, data.ok ? 'ok' : 'atencion');
   actualizarEstado();
+}
+// ------------------------------------------------------------
+// ejecutarBusqueda()
+// ------------------------------------------------------------
+async function ejecutarBusqueda() {
+
+  const campo   = document.getElementById('consulta');
+  const boton   = document.getElementById('boton-buscar');
+  const destino = document.getElementById('resultados-busqueda');
+
+  const consulta = campo.value.trim();
+
+  if (!consulta) {
+    destino.innerHTML = '';
+    campo.focus();
+    return;
+  }
+
+  boton.disabled = true;
+  boton.textContent = 'Buscando…';
+  destino.innerHTML = '<p class="ayuda-buscador">Buscando…</p>';
+
+  const inicio = Date.now();
+  const respuesta = await buscar(consulta);
+  const ms = Date.now() - inicio;
+
+  boton.disabled = false;
+  boton.textContent = 'Buscar';
+
+  destino.innerHTML = pintarResultados(respuesta);
+
+  console.log('Busqueda "' + consulta + '" · nivel ' + respuesta.nivel
+            + ' · ' + respuesta.total + ' candidatos · ' + ms + ' ms');
 }
