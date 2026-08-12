@@ -16,7 +16,7 @@
 const CONFIG = {
 
   // Pegar aqui el valor de Settings > API Keys > Project URL
-  SUPABASE_URL: 'https://mqthgvholgjfyoiczgqy.supabase.co/rest/v1/',
+  SUPABASE_URL: 'https://mqthgvholgjfyoiczgqy.supabase.co',
 
   // Pegar aqui el valor de Settings > API Keys > Publishable key
   SUPABASE_KEY: 'sb_publishable_y3w_8r-3RfuL4NypOmkbyA_ZkGzVP7s',
