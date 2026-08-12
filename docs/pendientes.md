@@ -6,6 +6,8 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 |---|---|---|---|
 | PENDIENTE-002 | Almacén físico del Corrugador. La muestra de 500 filas respalda el valor asumido: 124 filas cruzan ese centro con ese almacén, sin excepciones. Falta confirmación formal antes de darlo por validado. | Abierto · con evidencia | Confirmación del responsable |
 | PENDIENTE-005 | Códigos de almacén no documentados: `P992`, `P122`, `P123`, `P212`, `P213`, `PST`, `PBT`, `PPT`, `PCC`. Poco frecuentes. Sin impacto en la búsqueda: RN-032 garantiza que ningún material se oculte por esta causa. | Abierto | Información pendiente del responsable de SAP |
+| PENDIENTE-006 | Variantes fonéticas de palabras extranjeras. Las consultas `craf` y `carft` devuelven ruido en las primeras posiciones (curva, cuchilla, carriage). El material correcto aparece, pero no encabeza. Causa probable: el algoritmo fonético colapsa consonantes distintas. La consulta `kra` sí funciona correctamente. | Abierto | Fase 14, capa de sinónimos |
+| PENDIENTE-007 | Rendimiento de la comparación palabra a palabra. Recorre todas las filas del inventario. Con 500 filas responde bien; con 65.884 debe medirse y probablemente requiera un filtro previo por índice trigram. | Abierto | Fase 12, carga completa |
 
 ## Cerrados
 
@@ -41,3 +43,10 @@ No implementar si ponen en riesgo el piloto.
 10. Administración corporativa de usuarios y roles
 11. Reincorporación de columnas de costo y consumo (excluidas por ADR-005)
 12. Recuperación de la columna de fecha de creación como criterio de desempate
+13. Agente evaluador automático: un agente que use la aplicación publicada,
+    ejecute el banco de pruebas y califique los resultados (nivel de confianza
+    esperado frente al obtenido, posición del material correcto). Permitiría
+    medir cada versión sin pruebas manuales y detectar regresiones antes de
+    liberar
+14. Capa de sinónimos validados y aprendizaje sugerido a partir del uso, para
+    cubrir jerga local y variantes que ningún algoritmo puede deducir solo
