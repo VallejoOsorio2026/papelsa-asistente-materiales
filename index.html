@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asistente de Materiales · PAPELSA</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ============================================================
+     PANTALLA DE ACCESO
+     ============================================================ -->
+<div id="pantalla-acceso" class="pantalla visible">
+  <div class="acceso">
+    <div class="tarjeta-acceso">
+
+      <p class="marca">PAPELSA · Molino</p>
+      <h1 class="titulo-acceso">Asistente de materiales</h1>
+
+      <div id="aviso-acceso" class="aviso aviso-error"></div>
+
+      <div class="campo">
+        <label for="correo">Correo</label>
+        <input type="email" id="correo" autocomplete="username"
+               placeholder="nombre@empresa.com">
+      </div>
+
+      <div class="campo">
+        <label for="contrasena">Contraseña</label>
+        <input type="password" id="contrasena"
+               autocomplete="current-password">
+      </div>
+
+      <button id="boton-entrar" class="boton">Entrar</button>
+
+      <p class="pie" style="padding-bottom:0">
+        El acceso lo habilita el administrador del piloto.
+      </p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     APLICACION
+     ============================================================ -->
+<div id="pantalla-app" class="pantalla">
+
+  <div class="barra">
+    <div class="barra-identidad">
+      <strong id="nombre-usuario"></strong>
+      <span id="correo-usuario"></span>
+    </div>
+    <button id="boton-salir" class="boton boton-discreto">Salir</button>
+  </div>
+
+  <div class="contenido">
+
+    <div class="panel">
+      <h2>Estado del sistema</h2>
+      <div class="linea-estado">
+        <span>Conexión</span>
+        <span id="estado-conexion" class="dato">comprobando…</span>
+      </div>
+      <div class="linea-estado">
+        <span>Versión de la aplicación</span>
+        <span id="estado-version" class="dato"></span>
+      </div>
+      <div class="linea-estado">
+        <span>Versión de los datos</span>
+        <span id="estado-datos" class="dato">sin inventario cargado</span>
+      </div>
+      <div class="linea-estado">
+        <span>Materiales disponibles</span>
+        <span id="estado-materiales" class="dato">0</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Consulta de materiales</h2>
+      <p style="color:var(--tinta-suave);font-size:14px;margin:0">
+        Disponible cuando se cargue el inventario.
+      </p>
+    </div>
+
+  </div>
+
+  <p class="pie">Asistente de Materiales SAP · PAPELSA Molino</p>
+</div>
+
+
+<!-- ============================================================
+     CODIGO
+     El orden importa: la libreria primero, la configuracion
+     despues, y la aplicacion al final.
+     ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
