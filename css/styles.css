@@ -285,3 +285,104 @@ body {
   .barra { flex-wrap: wrap; }
   .contenido { padding: 16px 14px 40px; }
 }
+/* ============================================================
+   RESULTADOS DE BUSQUEDA
+   ============================================================
+   La cantidad y el codigo son lo que el ingeniero lee primero,
+   a veces con prisa y desde el telefono. Por eso van en
+   monoespaciada y con contraste alto.
+   ============================================================ */
+
+.buscador {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.buscador input {
+  flex: 1;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--tinta);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.buscador input:focus {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+  border-color: var(--acento);
+}
+
+.buscador .boton {
+  width: auto;
+  flex-shrink: 0;
+  padding: 12px 22px;
+}
+
+.ayuda-buscador {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--tinta-suave);
+}
+
+/* ---------- Tarjeta de resultado ---------- */
+.resultado {
+  padding: 16px;
+  margin-top: 12px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--acento);
+  border-radius: var(--radio);
+}
+
+.resultado-cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.resultado-codigo {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--acento);
+}
+
+.resultado-ambito {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+  text-align: right;
+}
+
+.resultado-descripcion {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+/* ---------- Cantidades ---------- */
+.valor-ok     { color: var(--ok);     font-weight: 700; }
+.valor-cero   { color: var(--tinta-suave); }
+.valor-alerta { color: var(--alerta); font-weight: 700; }
+
+/* RN-030: la advertencia de material comprometido no puede
+   pasar desapercibida, pero tampoco debe ocultar el dato. */
+.nota-comprometido {
+  margin: 8px 0 0;
+  padding: 9px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--alerta);
+  background: #fdf5ee;
+  border-left: 3px solid var(--alerta);
+  border-radius: 0 var(--radio) var(--radio) 0;
+}
+
+#resultados-busqueda:empty { display: none; }
