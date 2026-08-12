@@ -37,6 +37,15 @@ function conectarBotones() {
 
   document.getElementById('boton-salir')
           .addEventListener('click', salir);
+  const botonCargar = document.getElementById('boton-cargar');
+  if (botonCargar) {
+    botonCargar.addEventListener('click', cargarInventario);
+  }
+
+  const botonRevertir = document.getElementById('boton-revertir');
+  if (botonRevertir) {
+    botonRevertir.addEventListener('click', revertirInventario);
+  }
 
   // Enter en cualquiera de los dos campos inicia sesion.
   ['correo', 'contrasena'].forEach(function (id) {
@@ -109,6 +118,13 @@ async function abrirAplicacion(perfil) {
     CONFIG.VERSION_SISTEMA;
 
   cambiarPantalla('pantalla-app');
+  // Los paneles de administracion solo se muestran al admin.
+  // Ocultarlos no es una medida de seguridad: la proteccion
+  // real esta en las politicas de la base de datos.
+  if (esAdministrador()) {
+    document.getElementById('panel-carga').style.display = 'block';
+    document.getElementById('panel-revertir').style.display = 'block';
+  }
   actualizarEstado();
 }
 
@@ -160,4 +176,61 @@ function mostrarAviso(id, texto, tipo) {
 
 function ocultarAviso(id) {
   document.getElementById(id).classList.remove('visible');
+}
+// ------------------------------------------------------------
+// cargarInventario()
+// ------------------------------------------------------------
+async function cargarInventario() {
+
+  const entrada = document.getElementById('archivo-inventario');
+  const boton   = document.getElementById('boton-cargar');
+  const avance  = document.getElementById('avance-carga');
+
+  ocultarAviso('aviso-carga');
+
+  if (!entrada.files || entrada.files.length === 0) {
+    mostrarAviso('aviso-carga', 'Elige un archivo CSV.', 'error');
+    return;
+  }
+
+  boton.disabled = true;
+  boton.textContent = 'Cargando…';
+
+  const resultado = await importarInventario(
+    entrada.files[0],
+    function (texto) { avance.textContent = texto; }
+  );
+
+  boton.disabled = false;
+  boton.textContent = 'Cargar inventario';
+
+  if (resultado.ok) {
+    mostrarAviso('aviso-carga', resultado.mensaje, 'ok');
+    avance.textContent = '';
+    entrada.value = '';
+    actualizarEstado();
+  } else {
+    mostrarAviso('aviso-carga', resultado.mensaje, 'error');
+  }
+}
+
+
+// ------------------------------------------------------------
+// revertirInventario()
+// ------------------------------------------------------------
+async function revertirInventario() {
+
+  if (!confirm('Se restaurara la version anterior del inventario. ¿Continuar?')) {
+    return;
+  }
+
+  const { data, error } = await db.rpc('revertir_version_datos');
+
+  if (error) {
+    mostrarAviso('aviso-carga', 'Error: ' + error.message, 'error');
+    return;
+  }
+
+  mostrarAviso('aviso-carga', data.mensaje, data.ok ? 'ok' : 'atencion');
+  actualizarEstado();
 }
