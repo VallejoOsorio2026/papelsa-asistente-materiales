@@ -13,6 +13,65 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ## [No publicado]
 
 ### En construcción
+- Fase 7 — Motor de búsqueda
+
+---
+
+## [v0.4.0] — 2026-08-12
+
+### Añadido
+- Importador de inventario: lee el archivo en el navegador, valida los 21
+  encabezados y envía las filas por lotes de 500
+- Detección automática del separador del archivo (coma, punto y coma o tabulador)
+- Conversión numérica según la unidad de medida (RN-031)
+- Clasificación de ubicación por centro (RN-018, RN-032)
+- Versionado de cargas con activación validada y reversión a la versión anterior
+- Panel de administración visible solo para el rol `admin`
+- **500 filas reales cargadas y verificadas**
+
+### Verificado
+- 500 filas, 500 códigos únicos, ninguna sin texto normalizado
+- Tildes conservadas correctamente en descripciones y encabezados
+- Conversión numérica correcta: unidades de conteo en entero (`213`, `49`),
+  unidades continuas con decimales (`0.00` en metros)
+- **Búsqueda difusa funcionando.** La consulta `sinta doble fas`, con dos errores
+  ortográficos, devuelve las dos cintas doble faz en las posiciones 1 y 2.
+  La consulta `cinta aislante 3m` sitúa el material correcto con una similitud
+  de 0.486, más del doble que el siguiente candidato
+
+### Decisiones adoptadas
+- **ADR-009** — `XCentro` se carga por fidelidad al origen pero el motor lo
+  ignora. Se confirmó que no es relevante para el propósito del asistente
+- **ADR-010** — El archivo de origen se lee y se envía desde el navegador del
+  administrador directamente a la base de datos, sin pasar en ningún momento
+  por el repositorio
+
+### Pendientes
+- **PENDIENTE-001 — CERRADO.** `XCentro` no aplica al propósito del sistema
+- **PENDIENTE-004 — CERRADO.** La ambigüedad numérica se resuelve mediante la
+  unidad de medida (RN-031)
+- **PENDIENTE-002** — Abierto. Almacén del Corrugador, con evidencia sólida
+  pero sin confirmación formal
+- **PENDIENTE-005** — Abierto. Códigos de almacén no documentados. Sin impacto:
+  RN-032 garantiza que ningún material se oculte por esta causa
+
+### Conocido
+- Al recargar, la pantalla de acceso aparece un instante antes de restaurarse
+  la sesión. Severidad: menor
+- El filtro de códigos antiguos corrompidos detecta el formato con hora. Si la
+  hoja de cálculo exporta la fecha en otro formato, el valor no se descarta.
+  Afecta únicamente a la búsqueda por código antiguo. Severidad: menor
+- La conexión de botones en el arranque no comprueba la existencia del elemento
+  de forma uniforme. Sin impacto actual. Severidad: menor
+
+### Observado para la Fase 7
+- La similitud textual por sí sola no basta para el ranking: en una búsqueda de
+  cinta aislante aparece un material sin relación en cuarta posición. Se requiere
+  el ranking completo de RN-017
+- El umbral de similitud debe elevarse por encima de 0.15, ajustándolo mediante
+  el parámetro de configuración correspondiente
+
+### En construcción
 - Fase 5 — Carga del inventario
 
 ---
