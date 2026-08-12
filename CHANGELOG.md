@@ -13,6 +13,58 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ## [No publicado]
 
 ### En construcción
+- Fase 10 — Salida consolidada para SAP
+
+---
+
+## [v0.5.0] — 2026-08-12
+
+### Añadido
+- Motor de búsqueda con ranking por capas: código exacto, código antiguo,
+  referencia, medida, palabras coincidentes, similitud textual y disponibilidad
+- Extracción de atributos: referencias, medidas y palabras descriptivas
+- Nivel de confianza de 1 a 5 (RN-021, ADR-003)
+- Similitud fonética y por distancia de edición, mediante `fuzzystrmatch`
+- Comparación palabra a palabra, que evita que un término corto se diluya
+  dentro de una descripción larga
+- Pantalla de consulta con presentación diferenciada de disponible y
+  comprometido (RN-030)
+
+### Decisiones adoptadas
+- **ADR-011** — Arquitectura de búsqueda en capas. Cada capa cubre un tipo
+  de error que las anteriores no pueden resolver:
+  1. código exacto · 2. trigrama (letras omitidas o sobrantes) ·
+  3. fonética y distancia (letras sustituidas o en otro orden) ·
+  4. sinónimos validados (jerga local, Fase 14) ·
+  5. aprendizaje sugerido a partir del uso (Fase 14).
+  Ninguna sustituye a otra
+- **ADR-012** — La disponibilidad pesa deliberadamente poco en el ranking
+  (4 puntos sobre más de 100). RN-016: puede reordenar candidatos válidos,
+  nunca elevar un material incorrecto
+
+### Corregido
+- El umbral de similitud mínima bajó de 0.25 a 0.12. El valor anterior
+  descartaba consultas cortas con errores de escritura
+- La distancia de edición normalizada producía falsos positivos entre
+  palabras de longitud muy distinta: `rodamiento` frente a `liner` puntuaba
+  0.78. Ahora solo se aplica con longitudes comparables y pocos cambios
+  reales, y por debajo de 0.55 se descarta
+
+### Verificado
+- `kra` devuelve cinco materiales Kraft, todos correctos
+- `sinta doble das`, con dos errores ortográficos, sitúa las dos cintas
+  doble faz en las posiciones 1 y 2
+- Los falsos positivos de la corrección anterior quedaron en 0.00
+
+### Conocido
+- **PENDIENTE-006.** Las variantes `craf` y `carft` devuelven ruido en las
+  primeras posiciones. El material correcto aparece, pero no encabeza.
+  Causa probable: el algoritmo fonético colapsa consonantes distintas.
+  Se abordará con la capa de sinónimos en la Fase 14
+- **PENDIENTE-007.** La comparación palabra a palabra recorre todas las
+  filas. Con 500 el rendimiento es bueno; con 65.884 debe medirse y
+  probablemente requiera un filtro previo por índice
+### En construcción
 - Fase 7 — Motor de búsqueda
 
 ---
