@@ -8,6 +8,7 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | PENDIENTE-005 | Códigos de almacén no documentados: `P992`, `P122`, `P123`, `P212`, `P213`, `PST`, `PBT`, `PPT`, `PCC`. Poco frecuentes. Sin impacto en la búsqueda: RN-032 garantiza que ningún material se oculte por esta causa. | Abierto | Información pendiente del responsable de SAP |
 | PENDIENTE-006 | Variantes fonéticas de palabras extranjeras. Las consultas `craf` y `carft` devuelven ruido en las primeras posiciones (curva, cuchilla, carriage). El material correcto aparece, pero no encabeza. Causa probable: el algoritmo fonético colapsa consonantes distintas. La consulta `kra` sí funciona correctamente. | Abierto | Fase 14, capa de sinónimos |
 | PENDIENTE-007 | Rendimiento de la comparación palabra a palabra. Recorre todas las filas del inventario. Con 500 filas responde bien; con 65.884 debe medirse y probablemente requiera un filtro previo por índice trigram. | Abierto | Fase 12, carga completa |
+| PENDIENTE-008 | Validación del pegado en SAP real. El bloque de nueve columnas separadas por tabulador se verificó en Excel y las columnas caen correctamente. Falta comprobarlo en la pantalla de SAP. | Abierto | Cuando haya acceso a SAP |
 
 ## Cerrados
 
