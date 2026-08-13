@@ -510,3 +510,80 @@ body {
   background: var(--papel);
   border-radius: var(--radio);
 }
+/* ============================================================
+   SALIDA PARA SAP
+   ============================================================
+   Se copia de madrugada y se pega en un sistema donde un error
+   cuesta caro. Todo en monoespaciada, cifras alineadas y el
+   bloque copiable claramente separado del resto.
+   ============================================================ */
+
+.salida {
+  margin-top: 20px;
+  border-left: 3px solid var(--ok);
+}
+
+/* Permite desplazar la tabla en pantallas estrechas */
+.tabla-envoltura {
+  overflow-x: auto;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.tabla-salida {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.tabla-salida th {
+  padding: 9px 11px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+  background: var(--papel);
+  border-bottom: 1px solid var(--borde);
+}
+
+.tabla-salida td {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--papel);
+}
+
+.tabla-salida tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla-salida td.dato {
+  font-weight: 600;
+}
+
+/* ---------- Bloque copiable ---------- */
+.bloque-sap {
+  margin: 0 0 12px;
+  padding: 14px;
+  overflow-x: auto;
+  font-family: var(--dato);
+  font-size: 13px;
+  line-height: 1.7;
+  font-variant-numeric: tabular-nums;
+  tab-size: 12;
+  color: var(--tinta);
+  background: var(--papel);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  white-space: pre;
+  user-select: all;
+}
+
+/* RN-028: la responsabilidad sigue siendo del ingeniero */
+.nota-responsabilidad {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--tinta-suave);
+}
