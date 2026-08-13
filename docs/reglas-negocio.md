@@ -113,9 +113,23 @@ de la base de datos, no en este repositorio.
 
 ## Salida y feedback
 
-- **RN-027** — La salida consolidada incluye: Componente (código), Denominación,
-  Cantidad, UM, T = `L`, S = vacío, Almacén y Centro. Si la cantidad fue asumida,
-  se indica.
+- **RN-027** — Salida consolidada para SAP. Nueve columnas, en este orden
+  exacto y separadas por tabulador:
+
+  `Componente · Denominación · TE · Ctd. Neces. · UM · T · S · Almacén · Centro`
+
+  - `Componente` — código SAP del material
+  - `Denominación` — descripción del material
+  - `TE` — **siempre vacía**
+  - `Ctd. Neces.` — cantidad solicitada
+  - `UM` — unidad de medida base
+  - `T` — **siempre la letra `L`**
+  - `S` — **siempre vacía**
+  - `Almacén` y `Centro` — ubicación del material elegido
+
+  El orden debe coincidir exactamente con la pantalla de SAP: cualquier
+  desviación descoloca todas las columnas al pegar. Si alguna cantidad
+  fue asumida, se advierte de forma visible antes de la salida.
 - **RN-028** — El sistema no crea la orden en SAP. El ingeniero sigue siendo responsable
   de trasladar la información a la operación correspondiente.
 - **RN-029** — Toda respuesta final incluye la encuesta «¿Te fue útil?». Es opcional
