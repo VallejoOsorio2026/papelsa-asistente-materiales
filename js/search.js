@@ -257,56 +257,98 @@ function pintarItem(item) {
 
 // ------------------------------------------------------------
 // pintarCandidato()
+// RN-033: un material puede existir en varias ubicaciones.
+// Se muestra una sola tarjeta por material, con sus
+// ubicaciones ordenadas por prioridad (RN-018).
+//
+// El ingeniero elige material Y ubicacion: la salida para SAP
+// necesita saber de que almacen se retira.
 // ------------------------------------------------------------
-function pintarCandidato(c, orden, elegido) {
+function pintarCandidato(c, orden, elegido, almacenElegido) {
 
-  const disponible   = Number(c.disponible || 0);
-  const comprometido = Number(c.comprometido || 0);
+  const totalDisp = Number(c.total_disponible || 0);
+  const totalComp = Number(c.total_comprometido || 0);
+  const ubis = c.ubicaciones || [];
 
-  let html = '<div class="resultado candidato' + (elegido ? ' elegido' : '') + '" '
-           + 'data-orden="' + orden + '" '
-           + 'data-material="' + escapar(c.material) + '">';
+  let html = '<div class="resultado candidato'
+           + (elegido ? ' elegido' : '') + '">';
 
   html += '<div class="resultado-cabecera">'
         + '<span class="dato resultado-codigo">' + escapar(c.material) + '</span>'
-        + '<span class="resultado-ambito">' + textoAmbito(c.ambito) + '</span>'
-        + '</div>';
+        + '<span class="resultado-ambito">'
+        + ubis.length + (ubis.length === 1 ? ' ubicación' : ' ubicaciones')
+        + '</span></div>';
 
   html += '<p class="resultado-descripcion">'
         + escapar(c.descripcion) + '</p>';
 
+  // Totales del material
   html += '<div class="linea-estado">'
-        + '<span>Disponible</span>'
-        + '<span class="dato' + (disponible > 0 ? ' valor-ok' : ' valor-cero') + '">'
-        + formatearCantidad(disponible) + ' ' + escapar(c.unidad || '')
+        + '<span>Disponible en total</span>'
+        + '<span class="dato' + (totalDisp > 0 ? ' valor-ok' : ' valor-cero') + '">'
+        + formatearCantidad(totalDisp) + ' ' + escapar(c.unidad || '')
         + '</span></div>';
 
-  if (comprometido > 0) {
+  if (totalComp > 0) {
     html += '<div class="linea-estado">'
           + '<span>En proyectos</span>'
           + '<span class="dato valor-alerta">'
-          + formatearCantidad(comprometido) + ' ' + escapar(c.unidad || '')
-          + '</span></div>'
-          + '<p class="nota-comprometido">'
-          + 'Comprometido por un proyecto. Para usarlo habría que '
-          + 'identificar a quién está asignado y valorar prioridades.'
-          + '</p>';
+          + formatearCantidad(totalComp) + ' ' + escapar(c.unidad || '')
+          + '</span></div>';
   }
 
-  html += '<div class="linea-estado">'
-        + '<span>Centro · Almacén</span>'
-        + '<span class="dato">' + escapar(c.centro) + ' · '
-        + escapar(c.almacen) + '</span></div>';
-
-  if (c.ubicacion) {
+  if (c.material_antiguo) {
     html += '<div class="linea-estado">'
-          + '<span>Ubicación</span>'
-          + '<span class="dato">' + escapar(c.ubicacion) + '</span></div>';
+          + '<span>Código antiguo</span>'
+          + '<span class="dato">' + escapar(c.material_antiguo) + '</span></div>';
   }
 
-  html += '<div class="candidato-accion">'
-        + (elegido ? '✓ Seleccionado · pulsa para quitar' : 'Seleccionar')
-        + '</div>';
+  // Ubicaciones seleccionables
+  html += '<p class="titulo-ubicaciones">Elige de dónde se retira:</p>';
+
+  ubis.forEach(function (u) {
+
+    const disp = Number(u.disponible || 0);
+    const comp = Number(u.comprometido || 0);
+    const clave = c.material + '|' + u.centro + '|' + u.almacen;
+    const activa = elegido && almacenElegido === u.almacen;
+
+    html += '<div class="ubicacion' + (activa ? ' activa' : '') + '" '
+          + 'data-orden="' + orden + '" '
+          + 'data-clave="' + escapar(clave) + '">';
+
+    html += '<div class="ubicacion-fila">'
+          + '<span class="dato">' + escapar(u.centro) + ' · '
+          + escapar(u.almacen) + '</span>'
+          + '<span class="ubicacion-ambito">' + textoAmbito(u.ambito) + '</span>'
+          + '</div>';
+
+    html += '<div class="ubicacion-fila">'
+          + '<span class="dato' + (disp > 0 ? ' valor-ok' : ' valor-cero') + '">'
+          + formatearCantidad(disp) + ' ' + escapar(c.unidad || '') + '</span>';
+
+    if (comp > 0) {
+      html += '<span class="dato valor-alerta">'
+            + formatearCantidad(comp) + ' en proyectos</span>';
+    }
+
+    html += '</div>';
+
+    if (u.ubicacion) {
+      html += '<div class="ubicacion-detalle">'
+            + escapar(u.ubicacion) + '</div>';
+    }
+
+    html += '</div>';
+  });
+
+  // RN-030: la advertencia va una sola vez, al final
+  if (totalComp > 0 && totalDisp === 0) {
+    html += '<p class="nota-comprometido">'
+          + 'Sin stock libre. Todo el material está comprometido por '
+          + 'proyectos: habría que identificar a quién está asignado y '
+          + 'valorar prioridades.</p>';
+  }
 
   html += '</div>';
   return html;
