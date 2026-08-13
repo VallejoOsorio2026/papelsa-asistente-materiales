@@ -324,12 +324,11 @@ function refrescarSolicitud() {
 
 // ------------------------------------------------------------
 // generarSalida()
-// Se implementa en la Fase 10.
-// ------------------------------------------------------------
-// generarSalida()
 // RN-008: una unica salida consolidada al final.
+// Es tambien el momento en que la solicitud se registra: aqui
+// queda realmente resuelta.
 // ------------------------------------------------------------
-function generarSalida() {
+async function generarSalida() {
 
   const destino = document.getElementById('resultados-busqueda');
 
@@ -340,22 +339,54 @@ function generarSalida() {
 
   const zona = document.createElement('div');
   zona.id = 'zona-salida';
-  zona.innerHTML = pintarSalida(solicitudActual);
+  zona.innerHTML = pintarSalida(solicitudActual) + pintarEncuesta();
   destino.appendChild(zona);
 
-  const botonCopiar = document.getElementById('boton-copiar');
-  if (botonCopiar) {
-    botonCopiar.addEventListener('click', async function () {
-      const ok = await copiarSalida(solicitudActual);
-      this.textContent = ok
-        ? '✓ Copiado'
-        : 'Selecciona y copia con Ctrl+C';
-      const boton = this;
-      setTimeout(function () {
-        boton.textContent = 'Copiar para SAP';
-      }, 2500);
-    });
-  }
+  conectarBotonCopiar();
+  conectarEncuesta();
 
   zona.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // El registro va despues de mostrar la salida: si fallara,
+  // el ingeniero ya tiene lo que necesita.
+  await guardarSolicitud(solicitudActual, null);
+}
+
+
+// ------------------------------------------------------------
+// conectarBotonCopiar()
+// ------------------------------------------------------------
+function conectarBotonCopiar() {
+
+  const boton = document.getElementById('boton-copiar');
+  if (!boton) return;
+
+  boton.addEventListener('click', async function () {
+    const ok = await copiarSalida(solicitudActual);
+    this.textContent = ok ? '✓ Copiado' : 'Selecciona y copia con Ctrl+C';
+    const b = this;
+    setTimeout(function () { b.textContent = 'Copiar para SAP'; }, 2500);
+  });
+}
+
+
+// ------------------------------------------------------------
+// conectarEncuesta()
+// RN-029: opcional. Responder no bloquea nada.
+// ------------------------------------------------------------
+function conectarEncuesta() {
+
+  const encuesta = document.getElementById('encuesta');
+  if (!encuesta) return;
+
+  ['si', 'no'].forEach(function (valor) {
+    const boton = document.getElementById('feedback-' + valor);
+    if (!boton) return;
+
+    boton.addEventListener('click', async function () {
+      await enviarFeedback(valor === 'si');
+      encuesta.innerHTML = '<span class="encuesta-gracias">'
+        + 'Gracias. Tu respuesta ayuda a mejorar el asistente.</span>';
+    });
+  });
 }
