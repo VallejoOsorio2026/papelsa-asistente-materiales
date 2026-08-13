@@ -46,46 +46,81 @@ async function nuevaSolicitud(mensaje, informar) {
       cantidad:        it.cantidad,
       cantidadAsumida: it.cantidadAsumida,
       nivel:           respuesta.nivel,
+      sinInventario:   respuesta.sin_inventario === true,
       mensaje:         respuesta.mensaje,
       candidatos:      respuesta.resultados || [],
       elegido:         null
     });
   }
 
-  // Preseleccion solo con nivel 5: coincidencia exacta y
-  // candidato unico (RN-021, ADR-003). En cualquier otro caso
-  // decide el ingeniero (RN-024).
+// Preseleccion solo con nivel 5, y solo si el material tiene
+  // una unica ubicacion: si hay varias, decide el ingeniero
+  // de donde se retira (RN-024).
   solicitudActual.items.forEach(function (item) {
     if (item.nivel === 5 && item.candidatos.length === 1) {
-      item.elegido = item.candidatos[0];
+      const c = item.candidatos[0];
+      const ubis = c.ubicaciones || [];
+      if (ubis.length === 1) {
+        item.elegido = {
+          material:     c.material,
+          descripcion:  c.descripcion,
+          unidad:       c.unidad,
+          centro:       ubis[0].centro,
+          almacen:      ubis[0].almacen,
+          disponible:   ubis[0].disponible,
+          comprometido: ubis[0].comprometido
+        };
+      }
     }
   });
 
-  return solicitudActual;
-}
-
-
 // ------------------------------------------------------------
-// elegirMaterial()
+// elegirUbicacion()
+// RN-033: se elige material Y ubicacion, porque la salida para
+// SAP necesita saber de que almacen se retira.
+//
+// La clave llega con el formato  material|centro|almacen
 // ------------------------------------------------------------
-function elegirMaterial(orden, codigoMaterial) {
+function elegirUbicacion(orden, clave) {
 
   const item = solicitudActual.items.find(function (i) {
     return i.orden === orden;
   });
   if (!item) return;
 
+  const partes = clave.split('|');
+  const codigo  = partes[0];
+  const centro  = partes[1];
+  const almacen = partes[2];
+
+  // Volver a pulsar la misma ubicacion la deselecciona.
+  if (item.elegido
+      && item.elegido.material === codigo
+      && item.elegido.almacen === almacen) {
+    item.elegido = null;
+    return;
+  }
+
   const candidato = item.candidatos.find(function (c) {
-    return c.material === codigoMaterial;
+    return c.material === codigo;
+  });
+  if (!candidato) return;
+
+  const ubi = (candidato.ubicaciones || []).find(function (u) {
+    return u.centro === centro && u.almacen === almacen;
   });
 
-  // Volver a pulsar el mismo material lo deselecciona.
-  item.elegido = (item.elegido && item.elegido.material === codigoMaterial)
-               ? null
-               : candidato;
+  // Se guarda plano, tal como lo necesita la salida SAP.
+  item.elegido = {
+    material:     candidato.material,
+    descripcion:  candidato.descripcion,
+    unidad:       candidato.unidad,
+    centro:       centro,
+    almacen:      almacen,
+    disponible:   ubi ? ubi.disponible : 0,
+    comprometido: ubi ? ubi.comprometido : 0
+  };
 }
-
-
 // ------------------------------------------------------------
 // cambiarCantidad()
 // ------------------------------------------------------------
