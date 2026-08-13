@@ -612,3 +612,64 @@ body {
   font-size: 14px;
   color: var(--ok);
 }
+/* ============================================================
+   UBICACIONES DE UN MATERIAL (RN-033)
+   ============================================================ */
+
+.titulo-ubicaciones {
+  margin: 14px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tinta-suave);
+}
+
+.ubicacion {
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  background: var(--papel);
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.ubicacion:hover {
+  border-left-color: var(--acento);
+  background: var(--superficie);
+}
+
+.ubicacion.activa {
+  border-color: var(--ok);
+  border-left-color: var(--ok);
+  background: #f4f9f5;
+}
+
+.ubicacion-fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.ubicacion-fila + .ubicacion-fila {
+  margin-top: 3px;
+}
+
+.ubicacion-ambito {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+}
+
+.ubicacion-detalle {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--tinta-suave);
+}
+
+/* La tarjeta ya no se selecciona: se seleccionan sus ubicaciones */
+.candidato { cursor: default; }
+.candidato:hover { background: var(--superficie); }
