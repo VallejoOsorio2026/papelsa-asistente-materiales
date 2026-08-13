@@ -247,6 +247,8 @@ async function revertirInventario() {
 }
 // ------------------------------------------------------------
 // ejecutarBusqueda()
+// Interpreta el mensaje, busca cada material y muestra todos
+// los items juntos (RN-007).
 // ------------------------------------------------------------
 async function ejecutarBusqueda() {
 
@@ -264,17 +266,66 @@ async function ejecutarBusqueda() {
 
   boton.disabled = true;
   boton.textContent = 'Buscando…';
-  destino.innerHTML = '<p class="ayuda-buscador">Buscando…</p>';
 
   const inicio = Date.now();
-  const respuesta = await buscar(consulta);
+
+  const solicitud = await nuevaSolicitud(consulta, function (texto) {
+    destino.innerHTML = '<p class="ayuda-buscador">' + escapar(texto) + '</p>';
+  });
+
   const ms = Date.now() - inicio;
 
   boton.disabled = false;
   boton.textContent = 'Buscar';
 
-  destino.innerHTML = pintarResultados(respuesta);
+  refrescarSolicitud();
 
-  console.log('Busqueda "' + consulta + '" · nivel ' + respuesta.nivel
-            + ' · ' + respuesta.total + ' candidatos · ' + ms + ' ms');
+  console.log('Solicitud: ' + solicitud.items.length + ' items · ' + ms + ' ms');
+}
+
+
+// ------------------------------------------------------------
+// refrescarSolicitud()
+// Vuelve a pintar la solicitud y reconecta sus controles.
+// ------------------------------------------------------------
+function refrescarSolicitud() {
+
+  const destino = document.getElementById('resultados-busqueda');
+  destino.innerHTML = pintarSolicitud(solicitudActual);
+
+  // Seleccionar o quitar un material
+  destino.querySelectorAll('.candidato').forEach(function (tarjeta) {
+    tarjeta.addEventListener('click', function () {
+      elegirMaterial(
+        Number(this.dataset.orden),
+        this.dataset.material
+      );
+      refrescarSolicitud();
+    });
+  });
+
+  // Cambiar la cantidad
+  destino.querySelectorAll('.item-cantidad input').forEach(function (campo) {
+    campo.addEventListener('change', function () {
+      cambiarCantidad(Number(this.dataset.orden), this.value);
+      refrescarSolicitud();
+    });
+    // Al hacer clic en la cantidad no debe seleccionarse nada
+    campo.addEventListener('click', function (e) { e.stopPropagation(); });
+  });
+
+  // Salida para SAP
+  const botonSalida = document.getElementById('boton-salida');
+  if (botonSalida) {
+    botonSalida.addEventListener('click', generarSalida);
+  }
+}
+
+
+// ------------------------------------------------------------
+// generarSalida()
+// Se implementa en la Fase 10.
+// ------------------------------------------------------------
+function generarSalida() {
+  alert('Salida para SAP: pendiente de la Fase 10.');
 }
