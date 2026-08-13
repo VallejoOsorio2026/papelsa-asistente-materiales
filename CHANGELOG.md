@@ -13,6 +13,57 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ## [No publicado]
 
 ### En construcción
+- Fase 11 — Historial, trazabilidad y encuesta de utilidad
+
+---
+
+## [v0.6.0] — 2026-08-12
+
+### Añadido
+- **Consulta de varios materiales en un solo mensaje.** «4 rodamientos 6205
+  y dos correas» se interpreta como dos ítems independientes con sus
+  cantidades (RN-005)
+- Detección de cantidades en cifra y en palabra («4», «cuatro»)
+- Limpieza de verbos introductorios: «necesito», «requiero», «por favor»
+- Aviso visible de cantidad asumida, y cantidad editable por el ingeniero (RN-004)
+- Selección de material por ítem, con preselección automática únicamente
+  en nivel 5 (RN-021, ADR-003)
+- Presentación conjunta de todos los ítems, resueltos y pendientes (RN-007)
+- **Salida consolidada para SAP** (RN-008, RN-027): tabla de verificación
+  más bloque copiable con las 9 columnas separadas por tabulador
+- Botón de copia al portapapeles, con selección manual como alternativa
+  si el navegador la bloquea
+
+### Corregido
+- La barra `/` dejó de ser separador de ítems. En planta es una medida
+  (`3/4`, `1/2`, `3/8`) y dividir por ella destruía el atributo más
+  decisivo para identificar el material. `12 tornillos 3/8 x 2` se
+  interpretaba como dos materiales; ahora es uno solo con cantidad 12
+
+### Formato de salida confirmado (RN-027 actualizado)
+Nueve columnas, en este orden exacto y separadas por tabulador:
+`Componente · Denominación · TE · Ctd. Neces. · UM · T · S · Almacén · Centro`
+`TE` y `S` van siempre vacías. `T` lleva siempre la letra `L`.
+
+### Verificado
+- Interpretación correcta en los cuatro casos de prueba, incluida la
+  conservación de medidas fraccionarias
+- Flujo completo: consulta → selección → cantidades → salida → copiado
+- El bloque copiado se pega en Excel y las nueve columnas caen en su sitio
+
+### Pendiente de validación
+- **PENDIENTE-008.** Confirmar el pegado en SAP real. Verificado en Excel,
+  pendiente de acceso a SAP para la comprobación definitiva
+
+### Decisiones adoptadas
+- **ADR-013** — La salida se ofrece como bloque copiable en la propia
+  página, no como archivo descargable. Evita descargar, abrir, copiar y
+  cerrar un archivo en cada consulta, que es precisamente el tiempo que
+  el piloto busca ahorrar
+- **ADR-014** — Solo se preselecciona material en nivel 5. En cualquier
+  otro nivel decide el ingeniero (RN-024)
+
+### En construcción
 - Fase 10 — Salida consolidada para SAP
 
 ---
