@@ -386,3 +386,127 @@ body {
 }
 
 #resultados-busqueda:empty { display: none; }
+/* ============================================================
+   SOLICITUD CON VARIOS MATERIALES
+   ============================================================ */
+
+.item-solicitud {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.item-solicitud.resuelto {
+  border-left: 3px solid var(--ok);
+}
+
+.item-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.item-numero {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--acento);
+  border-radius: 50%;
+}
+
+.item-texto {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.item-nivel {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--tinta-suave);
+}
+
+/* ---------- Cantidad ---------- */
+.item-cantidad {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.item-cantidad label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tinta-suave);
+}
+
+.item-cantidad input {
+  width: 90px;
+  padding: 8px 10px;
+  font-family: var(--dato);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.item-cantidad input:focus {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+}
+
+/* RN-004: la cantidad asumida no puede pasar desapercibida */
+.aviso-cantidad {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--alerta);
+}
+
+/* ---------- Candidatos seleccionables ---------- */
+.candidato {
+  cursor: pointer;
+  border-left-color: var(--borde);
+}
+
+.candidato:hover {
+  border-left-color: var(--acento);
+  background: var(--papel);
+}
+
+.candidato.elegido {
+  border-left-color: var(--ok);
+  border-color: var(--ok);
+  background: #f4f9f5;
+}
+
+.candidato-accion {
+  margin-top: 10px;
+  padding-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--acento);
+  border-top: 1px solid var(--papel);
+}
+
+.candidato.elegido .candidato-accion {
+  color: var(--ok);
+}
+
+.nota-sin-resultado {
+  margin: 0;
+  padding: 12px;
+  font-size: 14px;
+  color: var(--tinta-suave);
+  background: var(--papel);
+  border-radius: var(--radio);
+}
