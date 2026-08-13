@@ -235,7 +235,13 @@ function pintarItem(item) {
   }
 
   html += '</div>';
-
+// Sin inventario cargado: se avisa con claridad en lugar de
+  // dejar creer que el material no existe.
+  if (item.sinInventario) {
+    html += '<div class="aviso aviso-error visible">'
+          + escapar(item.mensaje) + '</div></div>';
+    return html;
+  }
   if (item.candidatos.length === 0) {
     html += '<p class="nota-sin-resultado">'
           + escapar(item.mensaje) + '</p></div>';
@@ -247,7 +253,8 @@ function pintarItem(item) {
 
   item.candidatos.forEach(function (c) {
     const elegido = resuelto && item.elegido.material === c.material;
-    html += pintarCandidato(c, item.orden, elegido);
+    const almacen = elegido ? item.elegido.almacen : null;
+    html += pintarCandidato(c, item.orden, elegido, almacen);
   });
 
   html += '</div>';
