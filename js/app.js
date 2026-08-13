@@ -293,17 +293,19 @@ function refrescarSolicitud() {
   const destino = document.getElementById('resultados-busqueda');
   destino.innerHTML = pintarSolicitud(solicitudActual);
 
-  // Seleccionar o quitar un material
-  destino.querySelectorAll('.candidato').forEach(function (tarjeta) {
-    tarjeta.addEventListener('click', function () {
-      elegirMaterial(
+ // Seleccionar o quitar una ubicacion (RN-033).
+  // El clic va sobre la ubicacion, no sobre la tarjeta: hay
+  // que saber de que almacen se retira el material.
+  destino.querySelectorAll('.ubicacion').forEach(function (fila) {
+    fila.addEventListener('click', function (e) {
+      e.stopPropagation();
+      elegirUbicacion(
         Number(this.dataset.orden),
-        this.dataset.material
+        this.dataset.clave
       );
       refrescarSolicitud();
     });
   });
-
   // Cambiar la cantidad
   destino.querySelectorAll('.item-cantidad input').forEach(function (campo) {
     campo.addEventListener('change', function () {
