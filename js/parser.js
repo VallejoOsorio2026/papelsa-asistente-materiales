@@ -22,7 +22,14 @@ const NUMEROS_TEXTO = {
 };
 
 // Palabras que separan un material de otro.
-const SEPARADORES = /\s*(?:,|;|\/|\by\b|\btambien\b|\bademas\b|\bmas\b|\+|\n)\s*/i;
+// La barra "/" NO es separador: en planta es una medida
+// (3/4, 1/2, 3/8). Dividir por ella destruiria el dato mas
+// decisivo para identificar el material (RN-017).
+const SEPARADORES = /\s*(?:,|;|\by\b|\btambien\b|\bademas\b|\n)\s*/i;
+
+// Verbos y muletillas con que suele empezar una solicitud.
+// No aportan a la busqueda y ensucian la similitud.
+const INTRODUCCIONES = /^(?:necesito|necesitamos|requiero|quiero|busco|buscar|dame|deme|enviar|env[ií]e|mandar|por\s+favor|porfa|hola|solicito|pedir|pido)\s+/i;
 
 
 // ------------------------------------------------------------
@@ -50,7 +57,7 @@ function separarItems(mensaje) {
 // ------------------------------------------------------------
 function extraerCantidad(texto) {
 
-  let limpio = texto.trim();
+  let limpio = texto.trim().replace(INTRODUCCIONES, '').trim();
 
   // Cifra al inicio: "4 rodamientos", "10 und de cinta"
   const enCifra = limpio.match(
