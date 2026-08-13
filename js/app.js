@@ -326,6 +326,36 @@ function refrescarSolicitud() {
 // generarSalida()
 // Se implementa en la Fase 10.
 // ------------------------------------------------------------
+// generarSalida()
+// RN-008: una unica salida consolidada al final.
+// ------------------------------------------------------------
 function generarSalida() {
-  alert('Salida para SAP: pendiente de la Fase 10.');
+
+  const destino = document.getElementById('resultados-busqueda');
+
+  // Se anade debajo de la solicitud, sin borrarla: el ingeniero
+  // debe poder seguir viendo que eligio.
+  const existente = document.getElementById('zona-salida');
+  if (existente) existente.remove();
+
+  const zona = document.createElement('div');
+  zona.id = 'zona-salida';
+  zona.innerHTML = pintarSalida(solicitudActual);
+  destino.appendChild(zona);
+
+  const botonCopiar = document.getElementById('boton-copiar');
+  if (botonCopiar) {
+    botonCopiar.addEventListener('click', async function () {
+      const ok = await copiarSalida(solicitudActual);
+      this.textContent = ok
+        ? '✓ Copiado'
+        : 'Selecciona y copia con Ctrl+C';
+      const boton = this;
+      setTimeout(function () {
+        boton.textContent = 'Copiar para SAP';
+      }, 2500);
+    });
+  }
+
+  zona.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
