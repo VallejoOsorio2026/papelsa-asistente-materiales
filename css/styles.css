@@ -587,3 +587,28 @@ body {
   line-height: 1.45;
   color: var(--tinta-suave);
 }
+/* ---------- Encuesta de utilidad (RN-029) ---------- */
+.encuesta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.encuesta-pregunta {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.encuesta .boton-discreto {
+  min-width: 62px;
+}
+
+.encuesta-gracias {
+  font-size: 14px;
+  color: var(--ok);
+}
