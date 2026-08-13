@@ -13,6 +13,40 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ## [No publicado]
 
 ### En construcción
+- Fase 12 — Carga completa del inventario (65.884 filas)
+
+---
+
+## [v0.7.0] — 2026-08-12
+
+### Añadido
+- **Registro completo de solicitudes.** Cada consulta queda guardada con
+  su mensaje original, los ítems detectados, las cantidades, el nivel de
+  confianza y la decisión del ingeniero
+- Se guardan **todos los candidatos mostrados**, no solo el elegido. Es lo
+  que permite auditar un error crítico meses después: saber qué vio el
+  ingeniero y qué descartó
+- Encuesta de utilidad al final de cada solicitud (RN-029), opcional y sin
+  bloquear una nueva consulta
+- Función de historial propio por usuario
+- La versión del sistema queda registrada en cada solicitud, de modo que
+  siempre se sabe qué código produjo cada respuesta
+
+### Verificado
+- Una solicitud real quedó registrada con sus cinco candidatos, la decisión
+  y la respuesta de la encuesta
+- La reconstrucción completa de una solicitud funciona: qué se pidió,
+  cuántas opciones se mostraron, cuál se eligió y si resultó útil
+
+### Decisiones adoptadas
+- **ADR-015** — El registro ocurre al generar la salida para SAP, no al
+  buscar. Es el momento en que la solicitud queda realmente resuelta, y
+  evita guardar búsquedas exploratorias que el ingeniero descartó
+- **ADR-016** — Un fallo en el registro no interrumpe el trabajo. La salida
+  se muestra primero y el guardado ocurre después: si la base de datos no
+  responde, el ingeniero ya tiene lo que necesita
+
+### En construcción
 - Fase 11 — Historial, trazabilidad y encuesta de utilidad
 
 ---
