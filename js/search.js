@@ -229,15 +229,17 @@ function pintarItem(item) {
   html += '<span class="item-texto">' + escapar(item.textoOriginal) + '</span>';
 
   // Resumen visible cuando esta colapsado
-  if (resuelto) {
-    html += '<span class="item-resumen dato">'
-          + escapar(item.elegido.material) + ' · '
-          + escapar(item.elegido.almacen) + '</span>';
-  } else if (item.candidatos.length > 0) {
+if (resuelto) {
     html += '<span class="item-resumen">'
-          + item.candidatos.length + ' opciones</span>';
-  }
-
+          + '<span class="dato resumen-codigo">'
+          + escapar(item.elegido.material) + '</span>'
+          + '<span class="resumen-descripcion">'
+          + escapar(item.elegido.descripcion) + '</span>'
+          + '<span class="dato resumen-almacen">'
+          + escapar(item.elegido.centro) + ' · '
+          + escapar(item.elegido.almacen) + '</span>'
+          + '</span>';
+  } else if (item.candidatos.length > 0) {
   html += '<span class="flecha' + (abierto ? ' abierta' : '') + '">›</span>';
   html += '</div>';
 
