@@ -266,6 +266,7 @@ async function ejecutarBusqueda() {
 
   boton.disabled = true;
   boton.textContent = 'Buscando…';
+  bloquesAbiertos = {};
 
   const inicio = Date.now();
 
@@ -287,32 +288,70 @@ async function ejecutarBusqueda() {
 // ------------------------------------------------------------
 // refrescarSolicitud()
 // Vuelve a pintar la solicitud y reconecta sus controles.
+//
+// Se recuerda que bloques estaban desplegados: sin esto, al
+// elegir un material se cerraria todo y el ingeniero perderia
+// el sitio donde estaba mirando.
 // ------------------------------------------------------------
+let bloquesAbiertos = {};
+
+
+
 function refrescarSolicitud() {
 
   const destino = document.getElementById('resultados-busqueda');
   destino.innerHTML = pintarSolicitud(solicitudActual);
 
- // Seleccionar o quitar una ubicacion (RN-033).
-  // El clic va sobre la ubicacion, no sobre la tarjeta: hay
-  // que saber de que almacen se retira el material.
+  // Restaurar el estado de despliegue anterior
+  Object.keys(bloquesAbiertos).forEach(function (orden) {
+    const cuerpo = document.getElementById('cuerpo-' + orden);
+    if (!cuerpo) return;
+    const flecha = cuerpo.parentElement.querySelector('.flecha');
+    if (bloquesAbiertos[orden]) {
+      cuerpo.classList.add('visible');
+      if (flecha) flecha.classList.add('abierta');
+    } else {
+      cuerpo.classList.remove('visible');
+      if (flecha) flecha.classList.remove('abierta');
+    }
+  });
+
+  // Desplegar y contraer
+  destino.querySelectorAll('.item-cabecera.desplegable').forEach(function (cab) {
+    cab.addEventListener('click', function () {
+      const orden  = this.dataset.orden;
+      const cuerpo = document.getElementById('cuerpo-' + orden);
+      const flecha = this.querySelector('.flecha');
+      if (!cuerpo) return;
+
+      const abierto = cuerpo.classList.toggle('visible');
+      if (flecha) flecha.classList.toggle('abierta', abierto);
+      bloquesAbiertos[orden] = abierto;
+    });
+  });
+
+  // Seleccionar o quitar una ubicacion (RN-033)
   destino.querySelectorAll('.ubicacion').forEach(function (fila) {
     fila.addEventListener('click', function (e) {
       e.stopPropagation();
-      elegirUbicacion(
-        Number(this.dataset.orden),
-        this.dataset.clave
-      );
+      const orden = Number(this.dataset.orden);
+      elegirUbicacion(orden, this.dataset.clave);
+      // Al resolverse, el bloque se contrae para dar paso
+      // a lo que sigue pendiente.
+      const item = solicitudActual.items.find(function (i) {
+        return i.orden === orden;
+      });
+      bloquesAbiertos[orden] = (item && item.elegido === null);
       refrescarSolicitud();
     });
   });
+
   // Cambiar la cantidad
   destino.querySelectorAll('.item-cantidad input').forEach(function (campo) {
     campo.addEventListener('change', function () {
       cambiarCantidad(Number(this.dataset.orden), this.value);
       refrescarSolicitud();
     });
-    // Al hacer clic en la cantidad no debe seleccionarse nada
     campo.addEventListener('click', function (e) { e.stopPropagation(); });
   });
 
@@ -322,8 +361,6 @@ function refrescarSolicitud() {
     botonSalida.addEventListener('click', generarSalida);
   }
 }
-
-
 // ------------------------------------------------------------
 // generarSalida()
 // RN-008: una unica salida consolidada al final.
