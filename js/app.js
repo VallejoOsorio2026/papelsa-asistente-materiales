@@ -271,7 +271,14 @@ async function ejecutarBusqueda() {
   const inicio = Date.now();
 
   const solicitud = await nuevaSolicitud(consulta, function (texto) {
-    destino.innerHTML = '<p class="ayuda-buscador">' + escapar(texto) + '</p>';
+    // Se usa textContent en lugar de innerHTML: el texto de
+    // avance no necesita interpretarse como HTML y asi este
+    // archivo no depende de funciones de otro modulo.
+    destino.textContent = '';
+    const aviso = document.createElement('p');
+    aviso.className = 'ayuda-buscador';
+    aviso.textContent = texto;
+    destino.appendChild(aviso);
   });
 
   const ms = Date.now() - inicio;
