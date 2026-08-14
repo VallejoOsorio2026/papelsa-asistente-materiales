@@ -2,11 +2,9 @@
 // search.js
 // Proyecto: Asistente Inteligente de Materiales SAP - PAPELSA
 // ============================================================
-// Llama al motor de busqueda y prepara los resultados para
-// mostrarlos en pantalla.
-//
+// Llama al motor de busqueda y presenta los resultados.
 // Toda la logica de busqueda y ranking vive en la base de
-// datos. Este archivo solo pide y presenta.
+// datos. Este archivo solo pide y muestra.
 // ============================================================
 
 // ------------------------------------------------------------
@@ -33,9 +31,20 @@ async function buscar(consulta) {
 
 
 // ------------------------------------------------------------
+// escapar()
+// Evita que el texto del inventario se interprete como HTML.
+// ------------------------------------------------------------
+function escapar(texto) {
+  const d = document.createElement('div');
+  d.textContent = (texto === null || texto === undefined) ? '' : String(texto);
+  return d.innerHTML;
+}
+
+
+// ------------------------------------------------------------
 // textoAmbito()
-// RN-019: se distingue con claridad entre disponibilidad
-// inmediata y disponibilidad que exige traslado.
+// RN-019: se distingue disponibilidad inmediata de la que
+// exige traslado.
 // ------------------------------------------------------------
 function textoAmbito(ambito) {
   switch (ambito) {
@@ -57,105 +66,8 @@ function formatearCantidad(valor) {
 }
 
 
-// ------------------------------------------------------------
-// pintarResultados()
-// Construye el HTML de la lista de materiales encontrados.
-// ------------------------------------------------------------
-function pintarResultados(respuesta) {
-
-  const nivel = respuesta.nivel;
-  const filas = respuesta.resultados || [];
-
-  let html = '';
-
-  // Aviso del nivel de confianza
-  const clase = nivel >= 4 ? 'aviso-ok'
-              : nivel >= 2 ? 'aviso-atencion'
-              : 'aviso-error';
-
-  html += '<div class="aviso ' + clase + ' visible">'
-        + '<strong>Nivel de confianza ' + nivel + ' de 5.</strong> '
-        + escapar(respuesta.mensaje)
-        + '</div>';
-
-  if (filas.length === 0) {
-    return html;
-  }
-
-  filas.forEach(function (r) {
-
-    const disponible   = Number(r.disponible || 0);
-    const comprometido = Number(r.comprometido || 0);
-
-    html += '<div class="resultado">';
-
-    html += '<div class="resultado-cabecera">'
-          + '<span class="dato resultado-codigo">' + escapar(r.material) + '</span>'
-          + '<span class="resultado-ambito">' + textoAmbito(r.ambito) + '</span>'
-          + '</div>';
-
-    html += '<p class="resultado-descripcion">'
-          + escapar(r.descripcion) + '</p>';
-
-    // RN-030: disponible
-    html += '<div class="linea-estado">'
-          + '<span>Disponible</span>'
-          + '<span class="dato' + (disponible > 0 ? ' valor-ok' : ' valor-cero') + '">'
-          + formatearCantidad(disponible) + ' ' + escapar(r.unidad || '')
-          + '</span></div>';
-
-    // RN-030: comprometido, solo si existe
-    if (comprometido > 0) {
-      html += '<div class="linea-estado">'
-            + '<span>En proyectos</span>'
-            + '<span class="dato valor-alerta">'
-            + formatearCantidad(comprometido) + ' ' + escapar(r.unidad || '')
-            + '</span></div>'
-            + '<p class="nota-comprometido">'
-            + 'Este material existe pero está comprometido por un proyecto. '
-            + 'Para usarlo habría que identificar a quién está asignado y '
-            + 'valorar prioridades.</p>';
-    }
-
-    html += '<div class="linea-estado">'
-          + '<span>Centro · Almacén</span>'
-          + '<span class="dato">' + escapar(r.centro) + ' · '
-          + escapar(r.almacen) + '</span></div>';
-
-    if (r.ubicacion) {
-      html += '<div class="linea-estado">'
-            + '<span>Ubicación</span>'
-            + '<span class="dato">' + escapar(r.ubicacion) + '</span></div>';
-    }
-
-    if (r.material_antiguo) {
-      html += '<div class="linea-estado">'
-            + '<span>Código antiguo</span>'
-            + '<span class="dato">' + escapar(r.material_antiguo) + '</span></div>';
-    }
-
-    html += '<div class="linea-estado">'
-          + '<span>Coincidencia por</span>'
-          + '<span>' + escapar(r.origen) + '</span></div>';
-
-    html += '</div>';
-  });
-
-  return html;
-}
-
-
-// ------------------------------------------------------------
-// escapar()
-// Evita que el texto del inventario se interprete como HTML.
-// ------------------------------------------------------------
-function escapar(texto) {
-  const d = document.createElement('div');
-  d.textContent = (texto === null || texto === undefined) ? '' : String(texto);
-  return d.innerHTML;
-}
 // ============================================================
-// PRESENTACION DE UNA SOLICITUD CON VARIOS MATERIALES
+// SOLICITUD CON VARIOS MATERIALES
 // ============================================================
 
 // ------------------------------------------------------------
@@ -175,7 +87,6 @@ function pintarSolicitud(solicitud) {
     return i.elegido === null;
   }).length;
 
-  // Resumen del estado
   if (pendientes === 0) {
     html += '<div class="aviso aviso-ok visible">'
           + '<strong>Todo listo.</strong> '
@@ -209,14 +120,11 @@ function pintarSolicitud(solicitud) {
 // pintarItem()
 // Cada material es un bloque desplegable con indicador de
 // estado: rojo mientras no se elige, verde al elegir.
-//
-// Los resueltos se colapsan para dejar a la vista lo que
-// todavia requiere atencion.
 // ------------------------------------------------------------
 function pintarItem(item) {
 
   const resuelto = item.elegido !== null;
-  const abierto  = !resuelto;   // lo pendiente se muestra abierto
+  const abierto  = !resuelto;
 
   let html = '<div class="item-solicitud' + (resuelto ? ' resuelto' : '')
            + '" data-orden="' + item.orden + '">';
@@ -225,11 +133,9 @@ function pintarItem(item) {
   html += '<div class="item-cabecera desplegable" data-orden="' + item.orden + '">';
 
   html += '<span class="indicador ' + (resuelto ? 'verde' : 'rojo') + '"></span>';
-
   html += '<span class="item-texto">' + escapar(item.textoOriginal) + '</span>';
 
-  // Resumen visible cuando esta colapsado
-if (resuelto) {
+  if (resuelto) {
     html += '<span class="item-resumen">'
           + '<span class="dato resumen-codigo">'
           + escapar(item.elegido.material) + '</span>'
@@ -240,14 +146,17 @@ if (resuelto) {
           + escapar(item.elegido.almacen) + '</span>'
           + '</span>';
   } else if (item.candidatos.length > 0) {
+    html += '<span class="item-resumen">'
+          + item.candidatos.length + ' opciones</span>';
+  }
+
   html += '<span class="flecha' + (abierto ? ' abierta' : '') + '">›</span>';
   html += '</div>';
 
-  // ---------- Contenido ----------
+  // ---------- Cuerpo ----------
   html += '<div class="item-cuerpo' + (abierto ? ' visible' : '') + '" '
         + 'id="cuerpo-' + item.orden + '">';
 
-  // Cantidad
   html += '<div class="item-cantidad">'
         + '<label for="cant-' + item.orden + '">Cantidad</label>'
         + '<input type="number" min="1" step="1" class="dato" '
@@ -261,14 +170,12 @@ if (resuelto) {
   }
   html += '</div>';
 
-  // Sin inventario
   if (item.sinInventario) {
     html += '<div class="aviso aviso-error visible">'
           + escapar(item.mensaje) + '</div></div></div>';
     return html;
   }
 
-  // Sin resultados
   if (item.candidatos.length === 0) {
     html += '<p class="nota-sin-resultado">'
           + escapar(item.mensaje) + '</p></div></div>';
@@ -287,14 +194,13 @@ if (resuelto) {
   html += '</div></div>';
   return html;
 }
+
+
 // ------------------------------------------------------------
 // pintarCandidato()
 // RN-033: un material puede existir en varias ubicaciones.
-// Se muestra una sola tarjeta por material, con sus
-// ubicaciones ordenadas por prioridad (RN-018).
-//
-// El ingeniero elige material Y ubicacion: la salida para SAP
-// necesita saber de que almacen se retira.
+// Una tarjeta por material, con sus ubicaciones ordenadas por
+// prioridad (RN-018). Se elige material Y ubicacion.
 // ------------------------------------------------------------
 function pintarCandidato(c, orden, elegido, almacenElegido) {
 
@@ -314,7 +220,6 @@ function pintarCandidato(c, orden, elegido, almacenElegido) {
   html += '<p class="resultado-descripcion">'
         + escapar(c.descripcion) + '</p>';
 
-  // Totales del material
   html += '<div class="linea-estado">'
         + '<span>Disponible en total</span>'
         + '<span class="dato' + (totalDisp > 0 ? ' valor-ok' : ' valor-cero') + '">'
@@ -335,13 +240,12 @@ function pintarCandidato(c, orden, elegido, almacenElegido) {
           + '<span class="dato">' + escapar(c.material_antiguo) + '</span></div>';
   }
 
-  // Ubicaciones seleccionables
   html += '<p class="titulo-ubicaciones">Elige de dónde se retira:</p>';
 
   ubis.forEach(function (u) {
 
-    const disp = Number(u.disponible || 0);
-    const comp = Number(u.comprometido || 0);
+    const disp  = Number(u.disponible || 0);
+    const comp  = Number(u.comprometido || 0);
     const clave = c.material + '|' + u.centro + '|' + u.almacen;
     const activa = elegido && almacenElegido === u.almacen;
 
@@ -374,7 +278,6 @@ function pintarCandidato(c, orden, elegido, almacenElegido) {
     html += '</div>';
   });
 
-  // RN-030: la advertencia va una sola vez, al final
   if (totalComp > 0 && totalDisp === 0) {
     html += '<p class="nota-comprometido">'
           + 'Sin stock libre. Todo el material está comprometido por '
