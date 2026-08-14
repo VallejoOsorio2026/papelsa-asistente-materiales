@@ -673,3 +673,65 @@ body {
 /* La tarjeta ya no se selecciona: se seleccionan sus ubicaciones */
 .candidato { cursor: default; }
 .candidato:hover { background: var(--superficie); }
+/* ============================================================
+   ITEMS DESPLEGABLES
+   ============================================================
+   Con varios materiales en una sola consulta, mostrarlo todo
+   abierto obliga a desplazarse mucho. Lo resuelto se colapsa;
+   lo pendiente queda a la vista.
+   ============================================================ */
+
+.item-cabecera.desplegable {
+  cursor: pointer;
+  margin-bottom: 0;
+  padding: 4px 0;
+  user-select: none;
+}
+
+.item-cabecera.desplegable:hover .item-texto {
+  color: var(--acento);
+}
+
+/* Indicador de estado */
+.indicador {
+  flex-shrink: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.indicador.rojo  { background: var(--error); }
+.indicador.verde { background: var(--ok); }
+
+.item-texto { flex: 1; }
+
+.item-resumen {
+  font-size: 13px;
+  color: var(--tinta-suave);
+  white-space: nowrap;
+}
+
+.flecha {
+  flex-shrink: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--tinta-suave);
+  transform: rotate(90deg);
+  transition: transform .15s ease;
+}
+
+.flecha.abierta { transform: rotate(-90deg); }
+
+/* Cuerpo desplegable */
+.item-cuerpo { display: none; }
+
+.item-cuerpo.visible {
+  display: block;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--papel);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flecha { transition: none; }
+}
