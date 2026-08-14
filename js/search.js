@@ -207,20 +207,45 @@ function pintarSolicitud(solicitud) {
 
 // ------------------------------------------------------------
 // pintarItem()
+// Cada material es un bloque desplegable con indicador de
+// estado: rojo mientras no se elige, verde al elegir.
+//
+// Los resueltos se colapsan para dejar a la vista lo que
+// todavia requiere atencion.
 // ------------------------------------------------------------
 function pintarItem(item) {
 
   const resuelto = item.elegido !== null;
+  const abierto  = !resuelto;   // lo pendiente se muestra abierto
 
-  let html = '<div class="item-solicitud' + (resuelto ? ' resuelto' : '') + '">';
+  let html = '<div class="item-solicitud' + (resuelto ? ' resuelto' : '')
+           + '" data-orden="' + item.orden + '">';
 
-  // Cabecera del item
-  html += '<div class="item-cabecera">'
-        + '<span class="item-numero">' + item.orden + '</span>'
-        + '<span class="item-texto">' + escapar(item.textoOriginal) + '</span>'
-        + '</div>';
+  // ---------- Cabecera desplegable ----------
+  html += '<div class="item-cabecera desplegable" data-orden="' + item.orden + '">';
 
-  // Cantidad editable
+  html += '<span class="indicador ' + (resuelto ? 'verde' : 'rojo') + '"></span>';
+
+  html += '<span class="item-texto">' + escapar(item.textoOriginal) + '</span>';
+
+  // Resumen visible cuando esta colapsado
+  if (resuelto) {
+    html += '<span class="item-resumen dato">'
+          + escapar(item.elegido.material) + ' · '
+          + escapar(item.elegido.almacen) + '</span>';
+  } else if (item.candidatos.length > 0) {
+    html += '<span class="item-resumen">'
+          + item.candidatos.length + ' opciones</span>';
+  }
+
+  html += '<span class="flecha' + (abierto ? ' abierta' : '') + '">›</span>';
+  html += '</div>';
+
+  // ---------- Contenido ----------
+  html += '<div class="item-cuerpo' + (abierto ? ' visible' : '') + '" '
+        + 'id="cuerpo-' + item.orden + '">';
+
+  // Cantidad
   html += '<div class="item-cantidad">'
         + '<label for="cant-' + item.orden + '">Cantidad</label>'
         + '<input type="number" min="1" step="1" class="dato" '
@@ -228,23 +253,23 @@ function pintarItem(item) {
         + 'data-orden="' + item.orden + '" '
         + 'value="' + item.cantidad + '">';
 
-  // RN-004: la cantidad asumida se advierte de forma visible
   if (item.cantidadAsumida) {
     html += '<span class="aviso-cantidad">Cantidad asumida. '
           + 'Confírmala si no es correcta.</span>';
   }
-
   html += '</div>';
-// Sin inventario cargado: se avisa con claridad en lugar de
-  // dejar creer que el material no existe.
+
+  // Sin inventario
   if (item.sinInventario) {
     html += '<div class="aviso aviso-error visible">'
-          + escapar(item.mensaje) + '</div></div>';
+          + escapar(item.mensaje) + '</div></div></div>';
     return html;
   }
+
+  // Sin resultados
   if (item.candidatos.length === 0) {
     html += '<p class="nota-sin-resultado">'
-          + escapar(item.mensaje) + '</p></div>';
+          + escapar(item.mensaje) + '</p></div></div>';
     return html;
   }
 
@@ -257,11 +282,9 @@ function pintarItem(item) {
     html += pintarCandidato(c, item.orden, elegido, almacen);
   });
 
-  html += '</div>';
+  html += '</div></div>';
   return html;
 }
-
-
 // ------------------------------------------------------------
 // pintarCandidato()
 // RN-033: un material puede existir en varias ubicaciones.
