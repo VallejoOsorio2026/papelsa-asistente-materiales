@@ -40,8 +40,22 @@ de la base de datos, no en este repositorio.
 - **RN-013** — La versión de datos anterior permanece activa hasta que la nueva se valida
   por completo. Ante una carga fallida, el sistema sigue operando con la última versión
   válida. Nunca opera con una actualización parcial.
-- **RN-014** — El código de material es único por registro. No se asume que un mismo
-  código se repita en varias filas para representar bodegas distintas.
+- **RN-014** — **DEROGADA.** Sustituida por RN-033. Afirmaba que el código de
+  material es único por registro y que no debían asumirse filas repetidas por
+  bodega. La carga del inventario completo demostró lo contrario.
+
+- **RN-033** — Un material puede aparecer en **varias filas**, una por cada
+  combinación de centro y almacén donde tiene registro en SAP. La clave real
+  del inventario es **material + centro + almacén**.
+
+  Consecuencias:
+  - La búsqueda agrupa por código: un material es una sola tarjeta, con sus
+    ubicaciones listadas dentro y ordenadas por prioridad (RN-018)
+  - El ingeniero elige material **y** ubicación, porque la salida para SAP
+    necesita saber de qué almacén se retira
+  - El stock disponible se muestra por ubicación y también como total
+
+  Comprobado: 46.212 materiales distintos ocupan 65.883 filas.
   - **RN-031** — Conversión de valores numéricos. El archivo de origen entrega los
   números como texto con formato mixto: unos con punto de miles y coma decimal
   (`3.514.207,24`), otros como entero limpio. Si la unidad de medida es de conteo
