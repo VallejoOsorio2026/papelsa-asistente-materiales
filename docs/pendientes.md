@@ -5,9 +5,7 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | ID | Descripción | Estado | Se resuelve en |
 |---|---|---|---|
 | PENDIENTE-002 | Almacén físico del Corrugador. La muestra de 500 filas respalda el valor asumido: 124 filas cruzan ese centro con ese almacén, sin excepciones. Falta confirmación formal antes de darlo por validado. | Abierto · con evidencia | Confirmación del responsable |
-| PENDIENTE-005 | Códigos de almacén no documentados: `P992`, `P122`, `P123`, `P212`, `P213`, `PST`, `PBT`, `PPT`, `PCC`. Poco frecuentes. Sin impacto en la búsqueda: RN-032 garantiza que ningún material se oculte por esta causa. | Abierto | Información pendiente del responsable de SAP |
 | PENDIENTE-006 | Variantes fonéticas de palabras extranjeras. Las consultas `craf` y `carft` devuelven ruido en las primeras posiciones (curva, cuchilla, carriage). El material correcto aparece, pero no encabeza. Causa probable: el algoritmo fonético colapsa consonantes distintas. La consulta `kra` sí funciona correctamente. | Abierto | Fase 14, capa de sinónimos |
-| PENDIENTE-007 | Rendimiento de la comparación palabra a palabra. Recorre todas las filas del inventario. Con 500 filas responde bien; con 65.884 debe medirse y probablemente requiera un filtro previo por índice trigram. | Abierto | Fase 12, carga completa |
 | PENDIENTE-008 | Validación del pegado en SAP real. El bloque de nueve columnas separadas por tabulador se verificó en Excel y las columnas caen correctamente. Falta comprobarlo en la pantalla de SAP. | Abierto | Cuando haya acceso a SAP |
 
 ## Cerrados
@@ -17,6 +15,8 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | PENDIENTE-001 | Semántica de la columna `XCentro` | 2026-08-12 | **No aplica.** Se confirmó que no es relevante para el propósito del asistente. La columna se carga por fidelidad al origen, pero el motor la ignora (ADR-009) |
 | PENDIENTE-003 | Autorización para alojar el catálogo en la nube | 2026-08-11 | Autorización obtenida. El alcance quedó reducido a catálogo técnico con existencias y ubicación, sin costos ni consumos (ADR-005) |
 | PENDIENTE-004 | Formato numérico mixto en el archivo de origen | 2026-08-12 | Resuelto mediante la unidad de medida. Si es de conteo, el valor se redondea a entero; si es continua, se conservan los decimales (RN-031). Los valores ambiguos desaparecen porque corresponden a artículos contables |
+| PENDIENTE-005 | Códigos de almacén no documentados | 2026-08-12 | **No eran excepciones.** `P122`, `P123`, `P212`, `P213` son almacenes normales de cada centro. Apenas aparecían en la muestra de 500 filas |
+| PENDIENTE-007 | Rendimiento con el inventario completo | 2026-08-12 | Resuelto con un prefiltro por índice trigram antes de aplicar la comparación costosa. De 8.520 ms a 864 ms |
 
 ## Incidencias conocidas
 
