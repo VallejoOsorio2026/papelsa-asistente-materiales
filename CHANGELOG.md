@@ -13,6 +13,62 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ## [No publicado]
 
 ### En construcción
+- Banco de pruebas y medición objetiva del motor
+
+---
+
+## [v0.8.0] — 2026-08-12
+
+### Hallazgo estructural
+La premisa de que cada material aparece una sola vez era **incorrecta**.
+Un material existe en SAP una vez por cada combinación de centro y almacén:
+46.212 materiales distintos ocupan 65.883 filas. La muestra de 500 filas no
+lo reveló porque las filas estaban dispersas.
+
+Detectado porque la carga completa falló la validación de RN-012 y dejó
+activa la versión anterior, tal como estaba previsto. La verificación
+funcionó exactamente para lo que fue diseñada.
+
+### Añadido
+- **65.883 filas reales cargadas.** 46.212 materiales únicos, 43 MB de tabla
+  y 55 MB de base completa, muy por debajo del límite del plan
+- Agrupación por material: una tarjeta por código, con sus ubicaciones
+  listadas y ordenadas por prioridad (RN-018)
+- Selección de material **y** ubicación: la salida para SAP necesita saber
+  de qué almacén se retira
+- Aviso explícito cuando no hay inventario cargado, en lugar de devolver un
+  resultado vacío que se interpretaría como «ese material no existe»
+
+### Corregido
+- **Rendimiento.** Con 65.883 filas la búsqueda agotaba el tiempo de espera
+  del servidor (error 57014, más de 8 segundos). Se añadió un prefiltro por
+  índice trigram que reduce el conjunto a unos cientos de candidatos antes
+  de aplicar la comparación costosa. De 8.520 ms a **864 ms**
+- La clave única del inventario pasó de `(versión, material)` a
+  `(versión, material, centro, almacén)`
+
+### Reglas de negocio
+- **RN-014 — DEROGADA.** Afirmaba que el código de material es único por
+  registro
+- **RN-033 — NUEVA.** Un material puede aparecer en varias filas, una por
+  cada combinación de centro y almacén donde tiene registro en SAP. La clave
+  real es material + centro + almacén
+
+### Pendientes
+- **PENDIENTE-005 — CERRADO.** Los códigos de almacén «no documentados»
+  (`P122`, `P123`, `P212`, `P213`) son almacenes normales de cada centro.
+  Apenas aparecían en la muestra
+- **PENDIENTE-007 — CERRADO.** Rendimiento resuelto con el prefiltro
+- **ADR-002 — revisado.** El límite de espacio ya no aprieta: dos versiones
+  completas ocupan unos 110 MB de los 500 MB disponibles
+
+### Método de trabajo
+Se detuvo el ajuste del motor basado en casos sueltos elegidos a mano. Ese
+enfoque produce un motor afinado para esos casos y peor para los miles
+restantes. El siguiente paso es construir el banco de pruebas con casos
+representativos y medir cada cambio contra él.
+
+### En construcción
 - Fase 12 — Carga completa del inventario (65.884 filas)
 
 ---
