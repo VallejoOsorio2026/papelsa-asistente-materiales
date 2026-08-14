@@ -5,18 +5,16 @@
 // Gestiona una solicitud completa: varios materiales, sus
 // candidatos y lo que el ingeniero va eligiendo.
 //
-// RN-007: no se entregan resultados parciales. Los items
-// resueltos se conservan y se pregunta todo de una vez.
+// RN-007: no se entregan resultados parciales.
 // RN-008: al resolverse todos, una unica salida consolidada.
+// RN-033: se elige material Y ubicacion.
 // ============================================================
 
-// Solicitud en curso. Vive en memoria hasta generar la salida.
 let solicitudActual = null;
 
 
 // ------------------------------------------------------------
 // nuevaSolicitud()
-// Interpreta el mensaje y busca cada item por separado.
 // ------------------------------------------------------------
 async function nuevaSolicitud(mensaje, informar) {
 
@@ -33,8 +31,7 @@ async function nuevaSolicitud(mensaje, informar) {
     const it = items[i];
 
     if (informar) {
-      informar('Buscando ' + (i + 1) + ' de ' + items.length + ': '
-             + it.texto);
+      informar('Buscando ' + (i + 1) + ' de ' + items.length + ': ' + it.texto);
     }
 
     const respuesta = await buscar(it.texto);
@@ -53,9 +50,9 @@ async function nuevaSolicitud(mensaje, informar) {
     });
   }
 
-// Preseleccion solo con nivel 5, y solo si el material tiene
+  // Preseleccion solo con nivel 5, y solo si el material tiene
   // una unica ubicacion: si hay varias, decide el ingeniero
-  // de donde se retira (RN-024).
+  // de donde se retira (RN-024, ADR-003).
   solicitudActual.items.forEach(function (item) {
     if (item.nivel === 5 && item.candidatos.length === 1) {
       const c = item.candidatos[0];
@@ -74,11 +71,12 @@ async function nuevaSolicitud(mensaje, informar) {
     }
   });
 
+  return solicitudActual;
+}
+
+
 // ------------------------------------------------------------
 // elegirUbicacion()
-// RN-033: se elige material Y ubicacion, porque la salida para
-// SAP necesita saber de que almacen se retira.
-//
 // La clave llega con el formato  material|centro|almacen
 // ------------------------------------------------------------
 function elegirUbicacion(orden, clave) {
@@ -88,7 +86,7 @@ function elegirUbicacion(orden, clave) {
   });
   if (!item) return;
 
-  const partes = clave.split('|');
+  const partes  = clave.split('|');
   const codigo  = partes[0];
   const centro  = partes[1];
   const almacen = partes[2];
@@ -121,6 +119,8 @@ function elegirUbicacion(orden, clave) {
     comprometido: ubi ? ubi.comprometido : 0
   };
 }
+
+
 // ------------------------------------------------------------
 // cambiarCantidad()
 // ------------------------------------------------------------
