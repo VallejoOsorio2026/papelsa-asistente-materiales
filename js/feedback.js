@@ -217,6 +217,12 @@ function pintarHistorial(filas) {
           + (s.util === false ? ' · no fue útil' : '')
           + '</span>';
 
+    // Solo tiene sentido recuperar la salida si hubo algo elegido
+    if (s.resueltos > 0) {
+      html += '<button class="boton boton-discreto historial-salida" '
+            + 'data-id="' + escapar(s.id) + '">Ver salida SAP</button>';
+    }
+
     html += '</div>';
   });
 
@@ -234,4 +240,38 @@ async function cargarHistorial() {
   destino.innerHTML = '<p class="ayuda-buscador">Cargando…</p>';
   const filas = await obtenerHistorial(10);
   destino.innerHTML = pintarHistorial(filas);
+}
+// ------------------------------------------------------------
+// recuperarSalida()
+// El ingeniero copio la salida y perdio la ventana, o se
+// equivoco al pegar. Los datos ya estan guardados: no hay que
+// repetir la busqueda.
+// ------------------------------------------------------------
+async function recuperarSalida(solicitudId) {
+
+  const { data, error } = await db.rpc('salida_de_solicitud', {
+    p_solicitud_id: solicitudId
+  });
+
+  if (error || !data || data.ok !== true) {
+    return null;
+  }
+
+  // Se adapta a la forma que espera la salida SAP
+  return {
+    items: (data.items || []).map(function (f) {
+      return {
+        orden: f.orden,
+        cantidad: f.cantidad,
+        cantidadAsumida: f.cantidad_asumida === true,
+        elegido: {
+          material:    f.material,
+          descripcion: f.descripcion,
+          unidad:      f.unidad,
+          centro:      f.centro,
+          almacen:     f.almacen
+        }
+      };
+    })
+  };
 }
