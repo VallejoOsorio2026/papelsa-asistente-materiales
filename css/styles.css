@@ -823,3 +823,35 @@ body {
   font-size: 14px;
   color: var(--ok);
 }
+/* ---------- Material marcado para baja (RN-034) ---------- */
+.candidato.de-baja {
+  border-left-color: var(--alerta);
+  background: #fffdfa;
+}
+
+.aviso-baja {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--alerta);
+  background: #fdf5ee;
+  border-radius: var(--radio);
+}
+
+.aviso-baja::before {
+  content: "!";
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #fff;
+  background: var(--alerta);
+  border-radius: 50%;
+}
