@@ -48,6 +48,13 @@ async function nuevaSolicitud(mensaje, informar) {
       candidatos:      respuesta.resultados || [],
       elegido:         null
     });
+    // Registro automatico: no depende de que el ingeniero avise
+    if (respuesta.nivel <= 2 || (respuesta.resultados || []).length === 0) {
+      await registrarBusquedaFallida(
+        it.orden, it.texto, respuesta.nivel,
+        (respuesta.resultados || []).length
+      );
+    }
   }
 
   // Preseleccion solo con nivel 5, y solo si el material tiene
