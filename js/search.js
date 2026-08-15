@@ -176,20 +176,29 @@ function pintarItem(item) {
     return html;
   }
 
-  if (item.candidatos.length === 0) {
+if (item.candidatos.length === 0) {
     html += '<p class="nota-sin-resultado">'
-          + escapar(item.mensaje) + '</p></div></div>';
+          + escapar(item.mensaje) + '</p>'
+          + pintarAvisoBusqueda(item.orden)
+          + '</div></div>';
     return html;
   }
 
   html += '<p class="item-nivel">Nivel de confianza '
         + item.nivel + ' de 5 · ' + escapar(item.mensaje) + '</p>';
+  // El aviso tambien aparece con confianza baja: puede haber
+  // resultados y aun asi no ser lo que el ingeniero buscaba.
+  const avisoBajo = (item.nivel <= 2);
 
   item.candidatos.forEach(function (c) {
     const elegido = resuelto && item.elegido.material === c.material;
     const almacen = elegido ? item.elegido.almacen : null;
     html += pintarCandidato(c, item.orden, elegido, almacen);
   });
+
+  if (avisoBajo) {
+    html += pintarAvisoBusqueda(item.orden);
+  }
 
   html += '</div></div>';
   return html;
