@@ -375,7 +375,10 @@ function refrescarSolicitud() {
         return;
       }
 
-      const ok = await reportarBusqueda(Number(orden), texto);
+    const item = solicitudActual.items.find(function (i) {
+        return i.orden === Number(orden);
+      });
+      const ok = await reportarBusqueda(item ? item.idBusqueda : null, texto);
       const caja = this.closest('.reporte-busqueda');
 
       caja.innerHTML = ok
