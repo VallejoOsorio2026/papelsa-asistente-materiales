@@ -51,3 +51,8 @@ No implementar si ponen en riesgo el piloto.
     liberar
 14. Capa de sinónimos validados y aprendizaje sugerido a partir del uso, para
     cubrir jerga local y variantes que ningún algoritmo puede deducir solo
+15. Rediseño del frontend. Entre otros ajustes: hacer más notable la
+    advertencia de material marcado para baja, hoy demasiado sutil
+16. La coincidencia exacta por código debería ganar siempre. Al buscar
+    un código, el prefiltro por similitud puede colar otros materiales
+    por encima del exacto
