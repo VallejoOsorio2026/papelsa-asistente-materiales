@@ -102,3 +102,77 @@ async function obtenerHistorial(limite) {
 
   return data || [];
 }
+// ============================================================
+// BUSQUEDAS SIN RESULTADO UTIL
+// ============================================================
+// Se registran automaticamente. El aviso manual del ingeniero
+// anade contexto, pero el dato base se captura solo.
+// ============================================================
+
+// Identificadores por orden de item, para asociar el reporte.
+let busquedasFallidas = {};
+
+
+// ------------------------------------------------------------
+// registrarBusquedaFallida()
+// ------------------------------------------------------------
+async function registrarBusquedaFallida(orden, consulta, nivel, total) {
+
+  const { data, error } = await db.rpc('registrar_busqueda_fallida', {
+    p_consulta: consulta,
+    p_nivel: nivel || null,
+    p_total: total || 0
+  });
+
+  if (error) {
+    console.error('No se pudo registrar la busqueda:', error.message);
+    return null;
+  }
+
+  busquedasFallidas[orden] = data;
+  return data;
+}
+
+
+// ------------------------------------------------------------
+// reportarBusqueda()
+// ------------------------------------------------------------
+async function reportarBusqueda(orden, esperaba) {
+
+  const id = busquedasFallidas[orden];
+  if (!id) return false;
+
+  const { error } = await db.rpc('reportar_busqueda', {
+    p_id: id,
+    p_esperaba: esperaba,
+    p_comentario: null
+  });
+
+  if (error) {
+    console.error('No se pudo enviar el aviso:', error.message);
+    return false;
+  }
+
+  return true;
+}
+
+
+// ------------------------------------------------------------
+// pintarAvisoBusqueda()
+// Aparece cuando no hay resultados o cuando la confianza es
+// baja: es el momento en que el ingeniero esta a punto de
+// abandonar y su informacion vale mas.
+// ------------------------------------------------------------
+function pintarAvisoBusqueda(orden) {
+  return '<div class="reporte-busqueda" data-orden="' + orden + '">'
+       + '<p class="reporte-titulo">¿No encontraste lo que buscabas?</p>'
+       + '<p class="reporte-ayuda">Dinos qué material esperabas. '
+       + 'Sirve para corregir el buscador.</p>'
+       + '<div class="reporte-campos">'
+       + '<input type="text" class="reporte-texto" '
+       + 'id="reporte-texto-' + orden + '" '
+       + 'placeholder="Ej: cinta aislante 3M negra">'
+       + '<button class="boton boton-discreto reporte-enviar" '
+       + 'data-orden="' + orden + '">Avisar</button>'
+       + '</div></div>';
+}
