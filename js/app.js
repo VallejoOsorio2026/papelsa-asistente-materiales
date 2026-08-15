@@ -361,7 +361,28 @@ function refrescarSolicitud() {
     });
     campo.addEventListener('click', function (e) { e.stopPropagation(); });
   });
+// Aviso de busqueda sin resultado util
+  destino.querySelectorAll('.reporte-enviar').forEach(function (boton) {
+    boton.addEventListener('click', async function (e) {
+      e.stopPropagation();
 
+      const orden  = this.dataset.orden;
+      const campo  = document.getElementById('reporte-texto-' + orden);
+      const texto  = campo ? campo.value.trim() : '';
+
+      if (!texto) {
+        campo.focus();
+        return;
+      }
+
+      const ok = await reportarBusqueda(Number(orden), texto);
+      const caja = this.closest('.reporte-busqueda');
+
+      caja.innerHTML = ok
+        ? '<p class="reporte-gracias">Gracias. Revisaremos por qué no apareció.</p>'
+        : '<p class="reporte-ayuda">No se pudo enviar el aviso.</p>';
+    });
+  });
   // Salida para SAP
   const botonSalida = document.getElementById('boton-salida');
   if (botonSalida) {
