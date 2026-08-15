@@ -47,6 +47,16 @@ de la base de datos, no en este repositorio.
 - **RN-033** — Un material puede aparecer en **varias filas**, una por cada
   combinación de centro y almacén donde tiene registro en SAP. La clave real
   del inventario es **material + centro + almacén**.
+  - **RN-034** — Materiales marcados para baja en SAP. Algunas descripciones
+  incluyen `BORRAR` (381 filas), `BLOQUEADO` (10) o `ANULADO` (6).
+
+  **No se ocultan.** 37 de ellos conservan stock real: un retenedor marcado
+  para baja con 5 unidades en el estante sigue siendo un retenedor que existe.
+  Ocultarlo sería decidir por el ingeniero, que es justo lo que RN-024 prohíbe.
+
+  Tratamiento: se muestran **al final** de la lista de candidatos, con una
+  advertencia visible que indica que están marcados para baja y conviene
+  verificar antes de solicitarlos.
 
   Consecuencias:
   - La búsqueda agrupa por código: un material es una sola tarjeta, con sus
