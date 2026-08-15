@@ -48,15 +48,18 @@ async function nuevaSolicitud(mensaje, informar) {
       candidatos:      respuesta.resultados || [],
       elegido:         null
     });
-    // Registro automatico: no depende de que el ingeniero avise
+   // Registro automatico: no depende de que el ingeniero avise.
+    // El identificador se guarda en el propio item, no en una
+    // variable global: asi no depende del orden de carga de
+    // los archivos.
     if (respuesta.nivel <= 2 || (respuesta.resultados || []).length === 0) {
-      await registrarBusquedaFallida(
-        it.orden, it.texto, respuesta.nivel,
+      const idBusqueda = await registrarBusquedaFallida(
+        it.texto, respuesta.nivel,
         (respuesta.resultados || []).length
       );
+      solicitudActual.items[solicitudActual.items.length - 1]
+        .idBusqueda = idBusqueda;
     }
-  }
-
   // Preseleccion solo con nivel 5, y solo si el material tiene
   // una unica ubicacion: si hay varias, decide el ingeniero
   // de donde se retira (RN-024, ADR-003).
