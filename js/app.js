@@ -53,6 +53,17 @@ function conectarBotones() {
     botonCargar.addEventListener('click', cargarInventario);
   }
 
+  // Historial desplegable
+  const cabHistorial = document.getElementById('historial-cabecera');
+  if (cabHistorial) {
+    cabHistorial.addEventListener('click', async function () {
+      const lista  = document.getElementById('lista-historial');
+      const flecha = document.getElementById('flecha-historial');
+      const abierto = lista.classList.toggle('visible');
+      if (flecha) flecha.classList.toggle('abierta', abierto);
+      if (abierto) await cargarHistorial();
+    });
+  }
   const botonRevertir = document.getElementById('boton-revertir');
   if (botonRevertir) {
     botonRevertir.addEventListener('click', revertirInventario);
