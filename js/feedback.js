@@ -288,7 +288,7 @@ async function recuperarSalida(solicitudId) {
 // ============================================================
 
 async function obtenerMetricas(dias) {
-  const { data, error } = await db.rpc('metricas_piloto', {
+  const { data, error } = await db.rpc('metricas_admin', {
     p_dias: dias || 30
   });
   if (error) {
