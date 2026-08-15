@@ -61,7 +61,10 @@ function conectarBotones() {
       const flecha = document.getElementById('flecha-historial');
       const abierto = lista.classList.toggle('visible');
       if (flecha) flecha.classList.toggle('abierta', abierto);
-      if (abierto) await cargarHistorial();
+      if (abierto) {
+        await cargarHistorial();
+        conectarBotonesHistorial();
+      }
     });
   }
   const botonRevertir = document.getElementById('boton-revertir');
@@ -481,6 +484,47 @@ function conectarEncuesta() {
       await enviarFeedback(valor === 'si');
       encuesta.innerHTML = '<span class="encuesta-gracias">'
         + 'Gracias. Tu respuesta ayuda a mejorar el asistente.</span>';
+    });
+  });
+}
+// ------------------------------------------------------------
+// conectarBotonesHistorial()
+// ------------------------------------------------------------
+function conectarBotonesHistorial() {
+
+  document.querySelectorAll('.historial-salida').forEach(function (boton) {
+    boton.addEventListener('click', async function (e) {
+      e.stopPropagation();
+
+      const original = this.textContent;
+      this.disabled = true;
+      this.textContent = 'Recuperando…';
+
+      const salida = await recuperarSalida(this.dataset.id);
+
+      this.disabled = false;
+      this.textContent = original;
+
+      if (!salida || salida.items.length === 0) {
+        alert('No se pudo recuperar la salida de esa consulta.');
+        return;
+      }
+
+      // Se reutiliza la solicitud recuperada para generar la
+      // misma salida, sin repetir la busqueda.
+      solicitudActual = salida;
+
+      const destino = document.getElementById('resultados-busqueda');
+      const previa = document.getElementById('zona-salida');
+      if (previa) previa.remove();
+
+      const zona = document.createElement('div');
+      zona.id = 'zona-salida';
+      zona.innerHTML = pintarSalida(solicitudActual);
+      destino.appendChild(zona);
+
+      conectarBotonCopiar();
+      zona.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
 }
