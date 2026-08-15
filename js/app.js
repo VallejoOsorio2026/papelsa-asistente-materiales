@@ -52,7 +52,17 @@ function conectarBotones() {
   if (botonCargar) {
     botonCargar.addEventListener('click', cargarInventario);
   }
-
+// Metricas desplegables, solo para administracion
+  const cabMetricas = document.getElementById('metricas-cabecera');
+  if (cabMetricas) {
+    cabMetricas.addEventListener('click', async function () {
+      const caja   = document.getElementById('contenido-metricas');
+      const flecha = document.getElementById('flecha-metricas');
+      const abierto = caja.classList.toggle('visible');
+      if (flecha) flecha.classList.toggle('abierta', abierto);
+      if (abierto) await cargarMetricas();
+    });
+  }
   // Historial desplegable
   const cabHistorial = document.getElementById('historial-cabecera');
   if (cabHistorial) {
@@ -147,6 +157,7 @@ async function abrirAplicacion(perfil) {
   // Ocultarlos no es una medida de seguridad: la proteccion
   // real esta en las politicas de la base de datos.
   if (esAdministrador()) {
+    document.getElementById('panel-metricas').style.display = 'block';
     document.getElementById('panel-carga').style.display = 'block';
     document.getElementById('panel-revertir').style.display = 'block';
   }
