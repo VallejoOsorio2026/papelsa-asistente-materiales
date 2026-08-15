@@ -7,38 +7,51 @@
    que los codigos y las cantidades se lean sin ambiguedad.
    ============================================================ */
 
-:root {
-  --tinta:        #16202b;
-  --tinta-suave:  #5a6673;
-  --papel:        #f7f6f3;
-  --superficie:   #ffffff;
-  --borde:        #d9d6cf;
-  --acento:       #14606b;
-  --acento-vivo:  #1b7d8a;
-  --alerta:       #9a4a12;
-  --error:        #a32b1f;
-  --ok:           #2c6a3f;
+/* ============================================================
+   CABECERA CON LOGO
+   ============================================================ */
 
-  --radio: 6px;
-  --sombra: 0 1px 3px rgba(22, 32, 43, .08);
-
-  --texto: -apple-system, BlinkMacSystemFont, "Segoe UI",
-           Roboto, "Helvetica Neue", Arial, sans-serif;
-  --dato:  "SF Mono", "Cascadia Mono", Consolas,
-           "Liberation Mono", monospace;
+.barra {
+  border-bottom: 2px solid var(--lima);
 }
 
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  font-family: var(--texto);
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--tinta);
-  background: var(--papel);
-  -webkit-text-size-adjust: 100%;
+.logo-barra {
+  height: 26px;
+  width: auto;
+  flex-shrink: 0;
 }
+
+.barra-marca {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* Franja de marca en la pantalla de acceso */
+.tarjeta-acceso { border-top: 3px solid var(--lima); }
+
+.logo-acceso {
+  height: 34px;
+  width: auto;
+  margin-bottom: 18px;
+}
+
+.titulo-acceso {
+  font-family: var(--marca);
+  font-weight: 700;
+}
+
+.marca {
+  font-family: var(--marca);
+  color: var(--teal);
+}
+
+/* El indicador verde usa el teal, no el lima: sobre blanco
+   el lima no tiene contraste suficiente */
+.indicador.verde { background: var(--ok); }
+
+.pie { border-top: 1px solid var(--borde); }
 
 /* ---------- Codigos y cantidades ----------
    Cifras tabulares: las columnas de numeros quedan
