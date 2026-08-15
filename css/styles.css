@@ -773,3 +773,53 @@ body {
   }
   .resumen-descripcion { max-width: 100%; }
 }
+/* ---------- Aviso de búsqueda sin resultado ---------- */
+.reporte-busqueda {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--papel);
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio);
+}
+
+.reporte-titulo {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.reporte-ayuda {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--tinta-suave);
+}
+
+.reporte-campos {
+  display: flex;
+  gap: 8px;
+}
+
+.reporte-texto {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--tinta);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.reporte-texto:focus {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+}
+
+.reporte-enviar { flex-shrink: 0; }
+
+.reporte-gracias {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ok);
+}
