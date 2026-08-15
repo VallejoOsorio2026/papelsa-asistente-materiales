@@ -56,3 +56,8 @@ No implementar si ponen en riesgo el piloto.
 16. La coincidencia exacta por código debería ganar siempre. Al buscar
     un código, el prefiltro por similitud puede colar otros materiales
     por encima del exacto
+17. Revisar el modelo de sesión si el sistema escala a terminales
+    compartidos en planta. Hoy la sesión persiste por navegador y se
+    comparte entre pestañas, decisión tomada para no añadir fricción al
+    uso de madrugada. En un equipo compartido convendría sesión por
+    pestaña o cierre automático por inactividad
