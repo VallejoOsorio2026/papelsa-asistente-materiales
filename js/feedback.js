@@ -21,6 +21,10 @@ let solicitudGuardadaId = null;
 // ------------------------------------------------------------
 async function guardarSolicitud(solicitud, ms) {
 
+  // El tiempo viaja en el propio objeto: asi no depende de que
+  // quien llama lo pase correctamente.
+  const tiempo = ms || solicitud.tiempoMs || null;
+
   const items = solicitud.items.map(function (i) {
     return {
       orden:           i.orden,
@@ -36,7 +40,7 @@ async function guardarSolicitud(solicitud, ms) {
   const { data, error } = await db.rpc('registrar_solicitud', {
     p_mensaje: solicitud.mensajeOriginal,
     p_items: items,
-    p_ms: ms || null
+    p_ms: tiempo
   });
 
   if (error) {
