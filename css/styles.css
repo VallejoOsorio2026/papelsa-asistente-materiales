@@ -912,3 +912,45 @@ body {
   .historial-fila { flex-wrap: wrap; }
   .historial-meta { width: 100%; text-align: left; }
 }
+/* ============================================================
+   MÉTRICAS DEL PILOTO
+   ============================================================ */
+
+.metricas-titulo {
+  margin: 18px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+.metricas-titulo:first-child { margin-top: 0; }
+
+/* Las cifras que se llevarán a dirección */
+.linea-estado.destacada {
+  padding: 11px 12px;
+  margin: 4px 0;
+  background: #e9f2f3;
+  border-radius: var(--radio);
+  border-bottom: none;
+}
+
+.linea-estado.destacada span:first-child {
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.linea-estado.destacada .dato {
+  font-weight: 700;
+  color: var(--acento);
+}
+
+.metricas-nota {
+  margin: 16px 0 0;
+  padding-top: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--tinta-suave);
+  border-top: 1px solid var(--papel);
+}
