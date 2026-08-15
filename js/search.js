@@ -176,7 +176,7 @@ function pintarItem(item) {
     return html;
   }
 
-if (item.candidatos.length === 0) {
+  if (item.candidatos.length === 0) {
     html += '<p class="nota-sin-resultado">'
           + escapar(item.mensaje) + '</p>'
           + pintarAvisoBusqueda(item.orden)
@@ -186,6 +186,7 @@ if (item.candidatos.length === 0) {
 
   html += '<p class="item-nivel">Nivel de confianza '
         + item.nivel + ' de 5 · ' + escapar(item.mensaje) + '</p>';
+
   // El aviso tambien aparece con confianza baja: puede haber
   // resultados y aun asi no ser lo que el ingeniero buscaba.
   const avisoBajo = (item.nivel <= 2);
@@ -210,6 +211,7 @@ if (item.candidatos.length === 0) {
 // RN-033: un material puede existir en varias ubicaciones.
 // Una tarjeta por material, con sus ubicaciones ordenadas por
 // prioridad (RN-018). Se elige material Y ubicacion.
+// RN-034: los marcados para baja se muestran advertidos.
 // ------------------------------------------------------------
 function pintarCandidato(c, orden, elegido, almacenElegido) {
 
@@ -217,8 +219,18 @@ function pintarCandidato(c, orden, elegido, almacenElegido) {
   const totalComp = Number(c.total_comprometido || 0);
   const ubis = c.ubicaciones || [];
 
+  // RN-034: marcado para baja en SAP. Se muestra igual, pero
+  // advertido: puede tener stock real en el estante.
+  const deBaja = c.dado_de_baja === true;
+
   let html = '<div class="resultado candidato'
-           + (elegido ? ' elegido' : '') + '">';
+           + (elegido ? ' elegido' : '')
+           + (deBaja ? ' de-baja' : '') + '">';
+
+  if (deBaja) {
+    html += '<p class="aviso-baja">Marcado para baja en SAP. '
+          + 'Verifica antes de solicitarlo.</p>';
+  }
 
   html += '<div class="resultado-cabecera">'
         + '<span class="dato resultado-codigo">' + escapar(c.material) + '</span>'
