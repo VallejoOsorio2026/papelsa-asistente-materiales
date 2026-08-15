@@ -855,3 +855,60 @@ body {
   background: var(--alerta);
   border-radius: 50%;
 }
+/* ============================================================
+   HISTORIAL DE CONSULTAS
+   ============================================================ */
+
+.historial-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.historial-cabecera h2 { margin: 0; }
+
+.historial-cabecera:hover h2 { color: var(--acento); }
+
+.lista-historial { display: none; }
+
+.lista-historial.visible {
+  display: block;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--papel);
+}
+
+.historial-fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--papel);
+}
+
+.historial-fila:last-child { border-bottom: none; }
+
+.historial-fila .indicador { margin-top: 5px; }
+
+.historial-texto {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  overflow-wrap: break-word;
+}
+
+.historial-meta {
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: right;
+  color: var(--tinta-suave);
+}
+
+@media (max-width: 560px) {
+  .historial-fila { flex-wrap: wrap; }
+  .historial-meta { width: 100%; text-align: left; }
+}
