@@ -111,12 +111,11 @@ async function obtenerHistorial(limite) {
 
 // Identificadores por orden de item, para asociar el reporte.
 let busquedasFallidas = {};
-
-
 // ------------------------------------------------------------
 // registrarBusquedaFallida()
+// Devuelve el identificador para que quien llama lo guarde.
 // ------------------------------------------------------------
-async function registrarBusquedaFallida(orden, consulta, nivel, total) {
+async function registrarBusquedaFallida(consulta, nivel, total) {
 
   const { data, error } = await db.rpc('registrar_busqueda_fallida', {
     p_consulta: consulta,
@@ -129,7 +128,6 @@ async function registrarBusquedaFallida(orden, consulta, nivel, total) {
     return null;
   }
 
-  busquedasFallidas[orden] = data;
   return data;
 }
 
@@ -137,13 +135,15 @@ async function registrarBusquedaFallida(orden, consulta, nivel, total) {
 // ------------------------------------------------------------
 // reportarBusqueda()
 // ------------------------------------------------------------
-async function reportarBusqueda(orden, esperaba) {
+async function reportarBusqueda(idBusqueda, esperaba) {
 
-  const id = busquedasFallidas[orden];
-  if (!id) return false;
+  if (!idBusqueda) {
+    console.error('No hay registro de busqueda al que asociar el aviso.');
+    return false;
+  }
 
-  const { error } = await db.rpc('reportar_busqueda', {
-    p_id: id,
+  const { data, error } = await db.rpc('reportar_busqueda', {
+    p_id: idBusqueda,
     p_esperaba: esperaba,
     p_comentario: null
   });
@@ -153,10 +153,8 @@ async function reportarBusqueda(orden, esperaba) {
     return false;
   }
 
-  return true;
+  return data === true;
 }
-
-
 // ------------------------------------------------------------
 // pintarAvisoBusqueda()
 // Aparece cuando no hay resultados o cuando la confianza es
