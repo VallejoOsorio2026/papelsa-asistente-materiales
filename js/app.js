@@ -309,6 +309,8 @@ async function ejecutarBusqueda() {
   });
 
   const ms = Date.now() - inicio;
+  // Se guarda para poder medir el rendimiento real del piloto
+  if (solicitud) solicitud.tiempoMs = ms;
 
   boton.disabled = false;
   boton.textContent = 'Buscar';
@@ -446,7 +448,7 @@ async function generarSalida() {
 
   // El registro va despues de mostrar la salida: si fallara,
   // el ingeniero ya tiene lo que necesita.
-  await guardarSolicitud(solicitudActual, null);
+  await guardarSolicitud(solicitudActual, solicitudActual.tiempoMs || null);
 }
 
 
