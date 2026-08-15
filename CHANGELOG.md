@@ -13,6 +13,67 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ## [No publicado]
 
 ### En construcción
+- Materiales marcados para baja en SAP
+- Pantalla de historial
+
+---
+
+## [v0.9.0] — 2026-08-15
+
+### Añadido
+- **Ítems desplegables** con indicador de estado: rojo mientras no se elige,
+  verde al elegir. Lo resuelto se contrae mostrando código, descripción y
+  almacén; lo pendiente queda abierto
+- **Registro de búsquedas sin resultado útil.** Toda consulta con nivel 1 o 2,
+  o sin candidatos, se registra automáticamente sin depender de que el
+  ingeniero avise
+- Botón de aviso que aparece cuando no hay resultados o la confianza es baja.
+  El ingeniero indica qué esperaba encontrar
+- Diccionario de abreviaturas del inventario (49 equivalencias) construido a
+  partir del vocabulario real de 65.883 filas, no de intuiciones
+- Expansión bidireccional de la consulta: quien escribe «válvula» encuentra
+  «VVA», y quien escribe «VVA» encuentra «válvula»
+- Coincidencia por truncamiento: `valv` ↔ `valvula`, `mang` ↔ `manguera`
+
+### Hallazgo
+Las descripciones de SAP están abreviadas (`TORN`, `VVA`, `ROD`) mientras el
+ingeniero escribe la palabra completa. Ningún algoritmo de similitud resuelve
+esto: no son errores de escritura, son abreviaturas. Además conviven varias
+formas del mismo concepto (`VVA`, `VALV`, `VALVULA`) según la época en que se
+creó cada registro.
+
+Detectado analizando el vocabulario real del inventario completo, no casos
+sueltos.
+
+### Corregido
+- **Normalización del punto final.** El inventario escribe la misma abreviatura
+  con y sin punto: `rod` (1.247) y `rod.` (1.171), `mang` (277) y `mang.` (922).
+  Conservarlo las convertía en palabras distintas, de modo que «manguera» no
+  encontraba 922 filas. Ahora se elimina el punto al final de palabra y se
+  conserva el intermedio, que forma parte de decimales y referencias
+- **ADR-002 no se cumplía.** Cuatro versiones coexistían marcadas como
+  «anterior» y el borrado dejaba filas huérfanas: 131.766 en lugar de 65.883.
+  Se añadió el estado «histórica» y se corrigió la lógica de conmutación
+- **El umbral del prefiltro no persistía.** Se fijaba con un comando de sesión
+  que se perdía al terminar la consulta, volvía al valor por defecto y
+  descartaba candidatos válidos antes de que la comparación fonética actuara:
+  «sinta» no llegaba nunca a compararse con «cinta»
+- El identificador de la búsqueda fallida se guardaba en una variable global
+  que dependía del orden de carga de los archivos. Ahora vive en el propio ítem
+
+### Espacio
+La reconstrucción de índices recuperó 61 MB. Dos versiones completas del
+inventario ocupan 88 MB de tabla, sobre un límite de 500 MB.
+
+### Método
+El descubrimiento automático de variantes propone, no decide (RN-025). La
+primera ejecución encontró aciertos reales (`torn`↔`tornillo`, `transm`↔
+`transmision`) junto a falsos positivos que habrían sido dañinos:
+`contacto`↔`contactor` son piezas eléctricas distintas, y `papel`↔`papelsa`
+confundiría materiales con el nombre de la empresa. Confirma que la aprobación
+humana es necesaria.
+
+### En construcción
 - Banco de pruebas y medición objetiva del motor
 
 ---
