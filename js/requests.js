@@ -35,8 +35,9 @@ async function nuevaSolicitud(mensaje, informar) {
     }
 
     const respuesta = await buscar(it.texto);
+    const candidatos = respuesta.resultados || [];
 
-    solicitudActual.items.push({
+    const nuevoItem = {
       orden:           it.orden,
       textoOriginal:   it.textoOriginal,
       texto:           it.texto,
@@ -45,21 +46,24 @@ async function nuevaSolicitud(mensaje, informar) {
       nivel:           respuesta.nivel,
       sinInventario:   respuesta.sin_inventario === true,
       mensaje:         respuesta.mensaje,
-      candidatos:      respuesta.resultados || [],
+      candidatos:      candidatos,
+      idBusqueda:      null,
       elegido:         null
-    });
-   // Registro automatico: no depende de que el ingeniero avise.
+    };
+
+    // Registro automatico: no depende de que el ingeniero avise.
     // El identificador se guarda en el propio item, no en una
-    // variable global: asi no depende del orden de carga de
+    // variable global, para no depender del orden de carga de
     // los archivos.
-    if (respuesta.nivel <= 2 || (respuesta.resultados || []).length === 0) {
-      const idBusqueda = await registrarBusquedaFallida(
-        it.texto, respuesta.nivel,
-        (respuesta.resultados || []).length
+    if (respuesta.nivel <= 2 || candidatos.length === 0) {
+      nuevoItem.idBusqueda = await registrarBusquedaFallida(
+        it.texto, respuesta.nivel, candidatos.length
       );
-      solicitudActual.items[solicitudActual.items.length - 1]
-        .idBusqueda = idBusqueda;
     }
+
+    solicitudActual.items.push(nuevoItem);
+  }
+
   // Preseleccion solo con nivel 5, y solo si el material tiene
   // una unica ubicacion: si hay varias, decide el ingeniero
   // de donde se retira (RN-024, ADR-003).
