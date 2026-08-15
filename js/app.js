@@ -143,31 +143,44 @@ async function abrirAplicacion(perfil) {
 // ------------------------------------------------------------
 // Estado del sistema
 // ------------------------------------------------------------
+// ------------------------------------------------------------
+// actualizarEstado()
+// Una sola llamada resuelve tres cosas: cierra las solicitudes
+// vencidas (RN-009), lee el perfil y lee la version de datos
+// activa. Con la latencia del servidor, tres viajes se notan.
+// ------------------------------------------------------------
 async function actualizarEstado() {
 
   const conexion = document.getElementById('estado-conexion');
-  const viva = await probarConexion();
-  conexion.textContent = viva ? 'activa' : 'sin respuesta';
-  conexion.style.color = viva ? 'var(--ok)' : 'var(--error)';
 
-  // Version de inventario activa. Todavia no existe ninguna:
-  // es correcto que aparezca vacio hasta la carga de datos.
-  const { data: version } = await db
-    .from('versiones_datos')
-    .select('numero, filas_cargadas, finalizado_en')
-    .eq('estado', 'activa')
-    .maybeSingle();
+  const { data, error } = await db.rpc('iniciar_sesion_app');
 
-  if (version) {
-    document.getElementById('estado-datos').textContent =
-      'version ' + version.numero;
-    document.getElementById('estado-materiales').textContent =
-      version.filas_cargadas.toLocaleString('es-CO');
+  if (error || !data || data.ok !== true) {
+    conexion.textContent = 'sin respuesta';
+    conexion.style.color = 'var(--error)';
+    return;
   }
-}
 
+  conexion.textContent = 'activa';
+  conexion.style.color = 'var(--ok)';
 
-// ------------------------------------------------------------
+  if (data.inventario) {
+    document.getElementById('estado-datos').textContent =
+      'version ' + data.inventario.numero;
+    document.getElementById('estado-materiales').textContent =
+      Number(data.inventario.filas_cargadas).toLocaleString('es-CO');
+  } else {
+    document.getElementById('estado-datos').textContent =
+      'sin inventario cargado';
+    document.getElementById('estado-materiales').textContent = '0';
+  }
+
+  if (data.cerradas_por_inactividad > 0) {
+    console.log('RN-009: se cerraron '
+      + data.cerradas_por_inactividad
+      + ' solicitudes por inactividad.');
+  }
+}// ------------------------------------------------------------
 // Utilidades de pantalla
 // ------------------------------------------------------------
 function cambiarPantalla(id) {
