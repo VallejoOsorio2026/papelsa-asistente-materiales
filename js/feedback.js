@@ -174,3 +174,64 @@ function pintarAvisoBusqueda(orden) {
        + 'data-orden="' + orden + '">Avisar</button>'
        + '</div></div>';
 }
+// ============================================================
+// HISTORIAL
+// ============================================================
+
+// ------------------------------------------------------------
+// pintarHistorial()
+// Trazabilidad para el ingeniero: que pidio, cuando y si quedo
+// resuelto. Las politicas de seguridad ya impiden ver las
+// consultas de otros.
+// ------------------------------------------------------------
+function pintarHistorial(filas) {
+
+  if (!filas || filas.length === 0) {
+    return '<p class="ayuda-buscador">Todavía no hay consultas registradas.</p>';
+  }
+
+  let html = '';
+
+  filas.forEach(function (s) {
+
+    const fecha = new Date(s.creada_en).toLocaleString('es-CO', {
+      day: '2-digit', month: 'short',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const completa = s.resueltos === s.total_items;
+
+    html += '<div class="historial-fila">';
+
+    html += '<span class="indicador '
+          + (completa ? 'verde' : 'rojo') + '"></span>';
+
+    html += '<span class="historial-texto">'
+          + escapar(s.mensaje_original) + '</span>';
+
+    html += '<span class="historial-meta">'
+          + s.resueltos + ' de ' + s.total_items
+          + (s.estado === 'incompleta' ? ' · cerrada por inactividad' : '')
+          + '<br>' + fecha
+          + (s.util === true  ? ' · útil' : '')
+          + (s.util === false ? ' · no fue útil' : '')
+          + '</span>';
+
+    html += '</div>';
+  });
+
+  return html;
+}
+
+
+// ------------------------------------------------------------
+// cargarHistorial()
+// ------------------------------------------------------------
+async function cargarHistorial() {
+  const destino = document.getElementById('lista-historial');
+  if (!destino) return;
+
+  destino.innerHTML = '<p class="ayuda-buscador">Cargando…</p>';
+  const filas = await obtenerHistorial(10);
+  destino.innerHTML = pintarHistorial(filas);
+}
