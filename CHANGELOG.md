@@ -13,6 +13,56 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ## [No publicado]
 
 ### En construcción
+- Banco de pruebas y medición objetiva del motor
+- Pantalla de administración de sinónimos sugeridos
+
+---
+
+## [v1.0.0] — 2026-08-15
+
+Primera versión con todas las reglas del alcance inicial implementadas.
+El asistente resuelve en aproximadamente un segundo lo que en SAP toma
+entre cuatro y cinco minutos.
+
+### Añadido
+- **Cierre por inactividad (RN-009).** Dos mecanismos complementarios: una
+  tarea programada dentro de la base de datos cada 15 minutos, y un cierre
+  de respaldo al abrir la aplicación. El segundo garantiza que la regla se
+  cumpla aunque la tarea programada falle
+- **Historial de consultas** desplegable, con indicador de estado por
+  consulta y resultado de la encuesta
+- **Recuperación de la salida SAP** de una consulta anterior, sin repetir
+  la búsqueda
+- **Advertencia de materiales marcados para baja** en SAP
+
+### Reglas de negocio
+- **RN-034 — NUEVA.** Materiales marcados para baja (`BORRAR`, `BLOQUEADO`,
+  `ANULADO`). No se ocultan: 37 conservan stock real, y ocultarlos sería
+  decidir por el ingeniero. Se muestran al final y advertidos
+
+### Decisiones adoptadas
+- **ADR-017** — El estado de la sesión, el cierre por inactividad y la
+  versión del inventario se resuelven en una sola llamada. Con la latencia
+  del servidor, tres viajes se notan
+- **ADR-018** — Al recuperar una salida antigua, la ubicación se toma del
+  inventario vigente y no de la guardada. Si el material se movió de bodega,
+  la salida antigua enviaría al ingeniero a un almacén donde ya no está.
+  Contrapartida aceptada: se pierde la elección original de ubicación
+
+### Estado del alcance inicial
+Todas las reglas del brief están implementadas: interpretación en lenguaje
+natural, tolerancia a errores de escritura, consultas de varios materiales,
+niveles de confianza, alternativas, salida consolidada para SAP,
+trazabilidad completa, encuesta de utilidad y cierre por inactividad.
+
+### Lo que sigue
+El motor funciona, pero su calidad aún no se mide de forma objetiva. El
+siguiente paso es el banco de pruebas: un conjunto de casos representativos
+contra el que evaluar cada cambio, en lugar de ajustar sobre ejemplos
+sueltos. El registro de búsquedas sin resultado ya está alimentando ese
+conjunto con casos reales.
+
+### En construcción
 - Materiales marcados para baja en SAP
 - Pantalla de historial
 
