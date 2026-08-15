@@ -76,9 +76,13 @@ async function probarConexion() {
 // ------------------------------------------------------------
 async function obtenerPerfil() {
   try {
+   const { data: sesion } = await db.auth.getUser();
+    if (!sesion || !sesion.user) return null;
+
     const { data, error } = await db
       .from('perfiles')
       .select('id, correo, nombre, rol, activo')
+      .eq('id', sesion.user.id)
       .maybeSingle();
 
     if (error) {
