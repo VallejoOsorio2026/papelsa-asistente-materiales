@@ -279,3 +279,94 @@ async function recuperarSalida(solicitudId) {
     })
   };
 }
+// ============================================================
+// METRICAS DEL PILOTO
+// ============================================================
+// El tiempo ahorrado por consulta no se estima: se cuenta el
+// volumen. El valor por consulta se aplicara cuando exista una
+// medicion real del tiempo que hoy toma buscar en SAP.
+// ============================================================
+
+async function obtenerMetricas(dias) {
+  const { data, error } = await db.rpc('metricas_piloto', {
+    p_dias: dias || 30
+  });
+  if (error) {
+    console.error('No se pudieron leer las metricas:', error.message);
+    return null;
+  }
+  return data;
+}
+
+
+function filaMetrica(etiqueta, valor, destacada) {
+  return '<div class="linea-estado' + (destacada ? ' destacada' : '') + '">'
+       + '<span>' + etiqueta + '</span>'
+       + '<span class="dato">' + valor + '</span></div>';
+}
+
+
+function pintarMetricas(m) {
+
+  if (!m) return '<p class="ayuda-buscador">No se pudieron cargar.</p>';
+
+  const franja = m.por_franja || {};
+  const niveles = m.por_nivel_confianza || {};
+  const total = m.solicitudes_total || 0;
+
+  const laboral = franja.laboral || 0;
+  const fuera   = m.fuera_horario_ingenieria || 0;
+  const pct     = total > 0 ? Math.round(fuera * 100 / total) : 0;
+
+  const altos = (niveles['4'] || 0) + (niveles['5'] || 0);
+  const items = m.materiales_total || 0;
+  const pctAltos = items > 0 ? Math.round(altos * 100 / items) : 0;
+
+  let html = '<h3 class="metricas-titulo">Uso</h3>';
+  html += filaMetrica('Consultas realizadas', total);
+  html += filaMetrica('Materiales consultados', items);
+  html += filaMetrica('Usuarios activos', m.usuarios_activos || 0);
+
+  html += '<h3 class="metricas-titulo">Cobertura fuera de horario</h3>';
+  html += filaMetrica('Fuera del horario de ingeniería',
+                      fuera + ' de ' + total + ' · ' + pct + '%', true);
+  html += filaMetrica('En horario laboral', laboral);
+  html += filaMetrica('Fuera de horario', franja.fuera_horario || 0);
+  html += filaMetrica('Madrugada (22:00–06:00)', franja.madrugada || 0);
+  html += filaMetrica('Fin de semana', franja.fin_semana || 0);
+
+  html += '<h3 class="metricas-titulo">Calidad de las respuestas</h3>';
+  html += filaMetrica('Confianza alta (nivel 4–5)',
+                      altos + ' de ' + items + ' · ' + pctAltos + '%', true);
+  [5,4,3,2,1].forEach(function (n) {
+    html += filaMetrica('Nivel ' + n, niveles[String(n)] || 0);
+  });
+
+  html += '<h3 class="metricas-titulo">Rendimiento y satisfacción</h3>';
+  html += filaMetrica('Tiempo medio de respuesta',
+    m.tiempo_respuesta_ms_medio
+      ? Number(m.tiempo_respuesta_ms_medio).toLocaleString('es-CO') + ' ms'
+      : 'sin datos');
+  html += filaMetrica('Respuestas «sí fue útil»', m.feedback_positivo || 0);
+  html += filaMetrica('Respuestas «no fue útil»', m.feedback_negativo || 0);
+
+  html += '<h3 class="metricas-titulo">Fallos detectados</h3>';
+  html += filaMetrica('Búsquedas sin resultado útil',
+                      m.busquedas_sin_resultado || 0);
+  html += filaMetrica('Reportadas por el ingeniero',
+                      m.busquedas_reportadas || 0);
+
+  html += '<p class="metricas-nota">Últimos ' + m.periodo_dias + ' días. '
+        + 'El tiempo ahorrado se calculará cuando exista una medición real '
+        + 'del tiempo que hoy toma buscar en SAP.</p>';
+
+  return html;
+}
+
+
+async function cargarMetricas() {
+  const destino = document.getElementById('contenido-metricas');
+  if (!destino) return;
+  destino.innerHTML = '<p class="ayuda-buscador">Cargando…</p>';
+  destino.innerHTML = pintarMetricas(await obtenerMetricas(30));
+}
