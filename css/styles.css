@@ -5,7 +5,60 @@
    Interfaz pensada para un ingeniero de planta, a menudo desde
    el telefono y fuera de horario laboral. Prioridad absoluta:
    que los codigos y las cantidades se lean sin ambiguedad.
+
+   Variante A (por defecto): distinción resuelto/pendiente por
+   color + tinte de fondo, densidad cómoda.
+   Ver css/styles-variante-b.css para la variante compacta.
    ============================================================ */
+
+/* ---------- Tokens de marca ---------- */
+:root {
+  --teal:        #006975; /* principal */
+  --lima:        #A9C23F; /* principal — SOLO relleno/borde/acento grafico, nunca texto sobre claro */
+  --teal-medio:  #4F868E;
+
+  --tinta:       #333333;
+  --tinta-suave: #6D6D6D;
+  --borde:       #BCBCBC;
+
+  --acento:      var(--teal);
+  --acento-vivo: #00545D;
+
+  --ok:          #1B7A43;
+  --error:       #B3261E;
+  --alerta:      #A15C00;
+
+  --papel:       #F4F5F4;
+  --superficie:  #FFFFFF;
+
+  --radio:  10px;
+  --sombra: 0 2px 10px rgba(0,0,0,.08);
+
+  --marca: 'Comfortaa', ui-sans-serif, sans-serif; /* SOLO cabecera y titulos */
+  --dato:  ui-monospace, 'SFMono-Regular', 'Roboto Mono', Menlo, Consolas,
+           'Liberation Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+               'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  color: var(--tinta);
+  background: var(--papel);
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--acento); }
+a:hover { color: var(--acento-vivo); }
+
+/* Foco visible: nunca lima (RN de contraste), siempre teal */
+:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
 
 /* ============================================================
    CABECERA CON LOGO
@@ -47,8 +100,6 @@
   color: var(--teal);
 }
 
-/* El indicador verde usa el teal, no el lima: sobre blanco
-   el lima no tiene contraste suficiente */
 .indicador.verde { background: var(--ok); }
 
 .pie { border-top: 1px solid var(--borde); }
@@ -118,6 +169,7 @@
 
 .campo input {
   width: 100%;
+  min-height: 44px;
   padding: 12px 14px;
   font-family: inherit;
   font-size: 16px;          /* 16px evita el zoom automatico en iOS */
@@ -137,8 +189,11 @@
    BOTONES
    ============================================================ */
 .boton {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
+  min-height: 48px;
   padding: 13px 20px;
   font-family: inherit;
   font-size: 16px;
@@ -150,7 +205,7 @@
   cursor: pointer;
 }
 
-.boton:hover  { background: var(--acento-vivo); }
+.boton:hover  { background: var(--acento-vivo); border-color: var(--acento-vivo); }
 .boton:active { transform: translateY(1px); }
 
 .boton:disabled {
@@ -165,7 +220,8 @@
 
 .boton-discreto {
   width: auto;
-  padding: 7px 14px;
+  min-height: 44px;
+  padding: 9px 16px;
   font-size: 14px;
   color: var(--tinta-suave);
   background: transparent;
@@ -220,6 +276,9 @@
   padding: 12px 20px;
   background: var(--superficie);
   border-bottom: 1px solid var(--borde);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .barra-identidad {
@@ -250,15 +309,23 @@
 .contenido {
   max-width: 720px;
   margin: 0 auto;
-  padding: 24px 20px 48px;
+  padding: 16px 14px 40px;
+}
+
+@media (min-width: 640px) {
+  .contenido { padding: 24px 20px 48px; }
 }
 
 .panel {
   background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--radio);
-  padding: 20px;
-  margin-bottom: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+@media (min-width: 640px) {
+  .panel { padding: 20px; margin-bottom: 16px; }
 }
 
 .panel h2 {
@@ -296,7 +363,6 @@
 
 @media (max-width: 480px) {
   .barra { flex-wrap: wrap; }
-  .contenido { padding: 16px 14px 40px; }
 }
 /* ============================================================
    RESULTADOS DE BUSQUEDA
@@ -308,12 +374,14 @@
 
 .buscador {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 4px;
 }
 
 .buscador input {
-  flex: 1;
+  flex: 1 1 200px;
+  min-height: 48px;
   padding: 12px 14px;
   font-family: inherit;
   font-size: 16px;
@@ -330,9 +398,13 @@
 }
 
 .buscador .boton {
-  width: auto;
+  width: 100%;
   flex-shrink: 0;
   padding: 12px 22px;
+}
+
+@media (min-width: 480px) {
+  .buscador .boton { width: auto; }
 }
 
 .ayuda-buscador {
@@ -404,15 +476,17 @@
    ============================================================ */
 
 .item-solicitud {
-  margin-top: 20px;
+  margin-top: 16px;
   padding: 16px;
   background: var(--superficie);
   border: 1px solid var(--borde);
+  border-left: 3px solid var(--error);
   border-radius: var(--radio);
 }
 
 .item-solicitud.resuelto {
-  border-left: 3px solid var(--ok);
+  border-left-color: var(--ok);
+  background: #f7fbf8;
 }
 
 .item-cabecera {
@@ -442,9 +516,22 @@
 }
 
 .item-nivel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin: 0 0 4px;
+  padding: 3px 10px 3px 0;
   font-size: 13px;
   color: var(--tinta-suave);
+}
+
+.item-nivel::before {
+  content: "";
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tinta-suave);
 }
 
 /* ---------- Cantidad ---------- */
@@ -463,10 +550,11 @@
 }
 
 .item-cantidad input {
-  width: 90px;
-  padding: 8px 10px;
+  width: 96px;
+  min-height: 44px;
+  padding: 8px 12px;
   font-family: var(--dato);
-  font-size: 16px;
+  font-size: 17px;
   font-variant-numeric: tabular-nums;
   color: var(--tinta);
   border: 1px solid var(--borde);
@@ -486,15 +574,8 @@
 }
 
 /* ---------- Candidatos seleccionables ---------- */
-.candidato {
-  cursor: pointer;
-  border-left-color: var(--borde);
-}
-
-.candidato:hover {
-  border-left-color: var(--acento);
-  background: var(--papel);
-}
+.candidato { cursor: default; }
+.candidato:hover { background: var(--superficie); }
 
 .candidato.elegido {
   border-left-color: var(--ok);
@@ -541,6 +622,7 @@
   overflow-x: auto;
   border: 1px solid var(--borde);
   border-radius: var(--radio);
+  -webkit-overflow-scrolling: touch;
 }
 
 .tabla-salida {
@@ -591,6 +673,7 @@
   border-radius: var(--radio);
   white-space: pre;
   user-select: all;
+  -webkit-user-select: all;
 }
 
 /* RN-028: la responsabilidad sigue siendo del ingeniero */
@@ -604,6 +687,7 @@
 .encuesta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 16px;
   padding: 14px 16px;
@@ -637,8 +721,9 @@
 }
 
 .ubicacion {
-  padding: 10px 12px;
-  margin-bottom: 6px;
+  padding: 12px;
+  min-height: 44px;
+  margin-bottom: 8px;
   cursor: pointer;
   background: var(--papel);
   border: 1px solid var(--borde);
@@ -660,6 +745,7 @@
 .ubicacion-fila {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
   font-size: 14px;
@@ -683,9 +769,6 @@
   color: var(--tinta-suave);
 }
 
-/* La tarjeta ya no se selecciona: se seleccionan sus ubicaciones */
-.candidato { cursor: default; }
-.candidato:hover { background: var(--superficie); }
 /* ============================================================
    ITEMS DESPLEGABLES
    ============================================================
@@ -697,7 +780,8 @@
 .item-cabecera.desplegable {
   cursor: pointer;
   margin-bottom: 0;
-  padding: 4px 0;
+  padding: 6px 0;
+  min-height: 44px;
   user-select: none;
 }
 
@@ -708,8 +792,8 @@
 /* Indicador de estado */
 .indicador {
   flex-shrink: 0;
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
 }
 
@@ -726,7 +810,7 @@
 
 .flecha {
   flex-shrink: 0;
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
   color: var(--tinta-suave);
   transform: rotate(90deg);
@@ -809,12 +893,14 @@
 
 .reporte-campos {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .reporte-texto {
-  flex: 1;
+  flex: 1 1 200px;
   min-width: 0;
+  min-height: 44px;
   padding: 9px 12px;
   font-family: inherit;
   font-size: 15px;
@@ -878,6 +964,7 @@
   justify-content: space-between;
   gap: 12px;
   cursor: pointer;
+  min-height: 44px;
   user-select: none;
 }
 
@@ -940,7 +1027,6 @@
 
 .metricas-titulo:first-child { margin-top: 0; }
 
-/* Las cifras que se llevarán a dirección */
 .linea-estado.destacada {
   padding: 11px 12px;
   margin: 4px 0;
