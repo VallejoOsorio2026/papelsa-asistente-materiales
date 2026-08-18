@@ -6,6 +6,12 @@
 // decide que pantalla se muestra.
 // ============================================================
 
+// Estado de despliegue y motivos elegidos, para no perderlos
+// al repintar la solicitud.
+let bloquesAbiertos  = {};
+let motivosElegidos  = {};
+
+
 // ------------------------------------------------------------
 // Arranque
 // ------------------------------------------------------------
@@ -17,7 +23,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     return;
   }
 
-  // Si el navegador guarda una sesion previa, entramos directo.
   const perfil = await recuperarSesion();
   if (perfil) {
     abrirAplicacion(perfil);
@@ -37,7 +42,8 @@ function conectarBotones() {
 
   document.getElementById('boton-salir')
           .addEventListener('click', salir);
- const botonBuscar = document.getElementById('boton-buscar');
+
+  const botonBuscar = document.getElementById('boton-buscar');
   if (botonBuscar) {
     botonBuscar.addEventListener('click', ejecutarBusqueda);
   }
@@ -47,12 +53,19 @@ function conectarBotones() {
     campoConsulta.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') ejecutarBusqueda();
     });
-  } 
+  }
+
   const botonCargar = document.getElementById('boton-cargar');
   if (botonCargar) {
     botonCargar.addEventListener('click', cargarInventario);
   }
-// Metricas desplegables, solo para administracion
+
+  const botonRevertir = document.getElementById('boton-revertir');
+  if (botonRevertir) {
+    botonRevertir.addEventListener('click', revertirInventario);
+  }
+
+  // Metricas desplegables, solo para administracion
   const cabMetricas = document.getElementById('metricas-cabecera');
   if (cabMetricas) {
     cabMetricas.addEventListener('click', async function () {
@@ -63,6 +76,7 @@ function conectarBotones() {
       if (abierto) await cargarMetricas();
     });
   }
+
   // Historial desplegable
   const cabHistorial = document.getElementById('historial-cabecera');
   if (cabHistorial) {
@@ -76,10 +90,6 @@ function conectarBotones() {
         conectarBotonesHistorial();
       }
     });
-  }
-  const botonRevertir = document.getElementById('boton-revertir');
-  if (botonRevertir) {
-    botonRevertir.addEventListener('click', revertirInventario);
   }
 
   // Enter en cualquiera de los dos campos inicia sesion.
@@ -153,6 +163,7 @@ async function abrirAplicacion(perfil) {
     CONFIG.VERSION_SISTEMA;
 
   cambiarPantalla('pantalla-app');
+
   // Los paneles de administracion solo se muestran al admin.
   // Ocultarlos no es una medida de seguridad: la proteccion
   // real esta en las politicas de la base de datos.
@@ -161,13 +172,11 @@ async function abrirAplicacion(perfil) {
     document.getElementById('panel-carga').style.display = 'block';
     document.getElementById('panel-revertir').style.display = 'block';
   }
+
   actualizarEstado();
 }
 
 
-// ------------------------------------------------------------
-// Estado del sistema
-// ------------------------------------------------------------
 // ------------------------------------------------------------
 // actualizarEstado()
 // Una sola llamada resuelve tres cosas: cierra las solicitudes
@@ -205,7 +214,10 @@ async function actualizarEstado() {
       + data.cerradas_por_inactividad
       + ' solicitudes por inactividad.');
   }
-}// ------------------------------------------------------------
+}
+
+
+// ------------------------------------------------------------
 // Utilidades de pantalla
 // ------------------------------------------------------------
 function cambiarPantalla(id) {
@@ -226,6 +238,8 @@ function mostrarAviso(id, texto, tipo) {
 function ocultarAviso(id) {
   document.getElementById(id).classList.remove('visible');
 }
+
+
 // ------------------------------------------------------------
 // cargarInventario()
 // ------------------------------------------------------------
@@ -283,6 +297,8 @@ async function revertirInventario() {
   mostrarAviso('aviso-carga', data.mensaje, data.ok ? 'ok' : 'atencion');
   actualizarEstado();
 }
+
+
 // ------------------------------------------------------------
 // ejecutarBusqueda()
 // Interpreta el mensaje, busca cada material y muestra todos
@@ -305,13 +321,13 @@ async function ejecutarBusqueda() {
   boton.disabled = true;
   boton.textContent = 'Buscando…';
   bloquesAbiertos = {};
+  motivosElegidos = {};
 
   const inicio = Date.now();
 
   const solicitud = await nuevaSolicitud(consulta, function (texto) {
-    // Se usa textContent en lugar de innerHTML: el texto de
-    // avance no necesita interpretarse como HTML y asi este
-    // archivo no depende de funciones de otro modulo.
+    // textContent en lugar de innerHTML: el texto de avance no
+    // necesita interpretarse como HTML.
     destino.textContent = '';
     const aviso = document.createElement('p');
     aviso.className = 'ayuda-buscador';
@@ -320,6 +336,7 @@ async function ejecutarBusqueda() {
   });
 
   const ms = Date.now() - inicio;
+
   // Se guarda para poder medir el rendimiento real del piloto
   if (solicitud) solicitud.tiempoMs = ms;
 
@@ -340,10 +357,6 @@ async function ejecutarBusqueda() {
 // elegir un material se cerraria todo y el ingeniero perderia
 // el sitio donde estaba mirando.
 // ------------------------------------------------------------
-let bloquesAbiertos = {};
-
-
-
 function refrescarSolicitud() {
 
   const destino = document.getElementById('resultados-busqueda');
@@ -383,13 +396,18 @@ function refrescarSolicitud() {
       e.stopPropagation();
       const orden = Number(this.dataset.orden);
       elegirUbicacion(orden, this.dataset.clave);
-      // Al resolverse, el bloque se contrae para dar paso
-      // a lo que sigue pendiente.
       const item = solicitudActual.items.find(function (i) {
         return i.orden === orden;
       });
       bloquesAbiertos[orden] = (item && item.elegido === null);
       refrescarSolicitud();
+    });
+    // Accesibilidad: mismo comportamiento con teclado
+    fila.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.click();
+      }
     });
   });
 
@@ -401,7 +419,33 @@ function refrescarSolicitud() {
     });
     campo.addEventListener('click', function (e) { e.stopPropagation(); });
   });
-// Aviso de busqueda sin resultado util
+
+  // Aviso de busqueda: disponible siempre, plegado
+  destino.querySelectorAll('.abrir-reporte').forEach(function (boton) {
+    boton.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const cuerpo = document.getElementById(
+        'reporte-cuerpo-' + this.dataset.orden);
+      if (!cuerpo) return;
+      const abierto = cuerpo.classList.toggle('visible');
+      this.classList.toggle('activo', abierto);
+    });
+  });
+
+  // Motivo del fallo
+  destino.querySelectorAll('.motivo-busqueda').forEach(function (boton) {
+    boton.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const orden = this.dataset.orden;
+      destino.querySelectorAll(
+        '.motivo-busqueda[data-orden="' + orden + '"]'
+      ).forEach(function (b) { b.classList.remove('activo'); });
+      this.classList.add('activo');
+      motivosElegidos[orden] = this.dataset.motivo;
+    });
+  });
+
+  // Envio del aviso
   destino.querySelectorAll('.reporte-enviar').forEach(function (boton) {
     boton.addEventListener('click', async function (e) {
       e.stopPropagation();
@@ -409,41 +453,48 @@ function refrescarSolicitud() {
       const orden  = this.dataset.orden;
       const campo  = document.getElementById('reporte-texto-' + orden);
       const texto  = campo ? campo.value.trim() : '';
+      const motivo = motivosElegidos[orden] || null;
 
-      if (!texto) {
-        campo.focus();
+      // Se admite sin texto: elegir un motivo ya es informacion
+      if (!texto && !motivo) {
+        if (campo) campo.focus();
         return;
       }
 
-    const item = solicitudActual.items.find(function (i) {
+      const item = solicitudActual.items.find(function (i) {
         return i.orden === Number(orden);
       });
-      const ok = await reportarBusqueda(item ? item.idBusqueda : null, texto);
-      const caja = this.closest('.reporte-busqueda');
 
+      this.disabled = true;
+      this.textContent = 'Enviando…';
+
+      const ok = await reportarBusqueda(
+        item ? item.idBusqueda : null, texto, motivo);
+
+      const caja = this.closest('.reporte-busqueda');
       caja.innerHTML = ok
-        ? '<p class="reporte-gracias">Gracias. Revisaremos por qué no apareció.</p>'
+        ? '<p class="reporte-gracias">Gracias. Revisaremos este caso.</p>'
         : '<p class="reporte-ayuda">No se pudo enviar el aviso.</p>';
     });
   });
+
   // Salida para SAP
   const botonSalida = document.getElementById('boton-salida');
   if (botonSalida) {
     botonSalida.addEventListener('click', generarSalida);
   }
 }
+
+
 // ------------------------------------------------------------
 // generarSalida()
 // RN-008: una unica salida consolidada al final.
-// Es tambien el momento en que la solicitud se registra: aqui
-// queda realmente resuelta.
+// Es tambien el momento en que la solicitud se registra.
 // ------------------------------------------------------------
 async function generarSalida() {
 
   const destino = document.getElementById('resultados-busqueda');
 
-  // Se anade debajo de la solicitud, sin borrarla: el ingeniero
-  // debe poder seguir viendo que eligio.
   const existente = document.getElementById('zona-salida');
   if (existente) existente.remove();
 
@@ -482,10 +533,8 @@ function conectarBotonCopiar() {
 
 // ------------------------------------------------------------
 // conectarEncuesta()
-// RN-029: opcional. Responder no bloquea nada.
-//
-// El "si" se registra al instante. El "no" abre el detalle:
-// es el caso donde la informacion vale mas.
+// RN-029: opcional. El "no" abre el detalle: es el caso donde
+// la informacion vale mas.
 // ------------------------------------------------------------
 function conectarEncuesta() {
 
@@ -552,6 +601,8 @@ function conectarDetalleFallo() {
       + 'Gracias. Revisaremos este caso.</p>';
   });
 }
+
+
 // ------------------------------------------------------------
 // conectarBotonesHistorial()
 // ------------------------------------------------------------
