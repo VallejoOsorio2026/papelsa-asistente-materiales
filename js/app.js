@@ -483,21 +483,73 @@ function conectarBotonCopiar() {
 // ------------------------------------------------------------
 // conectarEncuesta()
 // RN-029: opcional. Responder no bloquea nada.
+//
+// El "si" se registra al instante. El "no" abre el detalle:
+// es el caso donde la informacion vale mas.
 // ------------------------------------------------------------
 function conectarEncuesta() {
 
   const encuesta = document.getElementById('encuesta');
   if (!encuesta) return;
 
-  ['si', 'no'].forEach(function (valor) {
-    const boton = document.getElementById('feedback-' + valor);
-    if (!boton) return;
-
-    boton.addEventListener('click', async function () {
-      await enviarFeedback(valor === 'si');
+  const botonSi = document.getElementById('feedback-si');
+  if (botonSi) {
+    botonSi.addEventListener('click', async function () {
+      await enviarFeedback(true, null, null);
       encuesta.innerHTML = '<span class="encuesta-gracias">'
         + 'Gracias. Tu respuesta ayuda a mejorar el asistente.</span>';
     });
+  }
+
+  const botonNo = document.getElementById('feedback-no');
+  if (botonNo) {
+    botonNo.addEventListener('click', function () {
+      encuesta.innerHTML = '<span class="encuesta-pregunta">'
+        + 'No fue útil</span>';
+      const zona = document.getElementById('detalle-fallo');
+      zona.innerHTML = pintarDetalleFallo();
+      conectarDetalleFallo();
+      zona.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
+}
+
+
+// ------------------------------------------------------------
+// conectarDetalleFallo()
+// ------------------------------------------------------------
+function conectarDetalleFallo() {
+
+  let motivoElegido = null;
+
+  document.querySelectorAll('.motivo-fallo').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+      document.querySelectorAll('.motivo-fallo').forEach(function (b) {
+        b.classList.remove('activo');
+      });
+      this.classList.add('activo');
+      motivoElegido = this.dataset.motivo;
+    });
+  });
+
+  const enviar = document.getElementById('enviar-fallo');
+  if (!enviar) return;
+
+  enviar.addEventListener('click', async function () {
+
+    const campo = document.getElementById('esperado');
+    const esperado = campo ? campo.value.trim() : '';
+
+    // Se registra aunque no elija motivo: un "no" sin detalle
+    // sigue siendo informacion.
+    this.disabled = true;
+    this.textContent = 'Enviando…';
+
+    await enviarFeedback(false, motivoElegido, esperado);
+
+    document.getElementById('detalle-fallo').innerHTML =
+      '<p class="encuesta-gracias" style="padding:14px 0">'
+      + 'Gracias. Revisaremos este caso.</p>';
   });
 }
 // ------------------------------------------------------------
