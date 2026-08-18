@@ -1087,3 +1087,54 @@ a:hover { color: var(--acento-vivo); }
   }
   .motivo-fallo { width: auto; }
 }
+
+/* ============================================================
+   AVISO DE BUSQUEDA PLEGABLE
+   ============================================================
+   Disponible siempre, pero discreto: cuando la busqueda acierta
+   no debe estorbar, y cuando falla tiene que estar a mano.
+   ============================================================ */
+
+.abrir-reporte {
+  width: 100%;
+  padding: 10px 0;
+  min-height: 44px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--tinta-suave);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.abrir-reporte::after {
+  content: " ›";
+  display: inline-block;
+  transform: rotate(90deg);
+  transition: transform .15s ease;
+}
+
+.abrir-reporte:hover { color: var(--acento); }
+
+.abrir-reporte.activo {
+  color: var(--acento);
+}
+
+.abrir-reporte.activo::after {
+  transform: rotate(-90deg);
+}
+
+.reporte-cuerpo { display: none; }
+
+.reporte-cuerpo.visible {
+  display: block;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--borde);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abrir-reporte::after { transition: none; }
+}
