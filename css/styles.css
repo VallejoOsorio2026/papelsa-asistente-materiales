@@ -1053,3 +1053,37 @@ a:hover { color: var(--acento-vivo); }
   color: var(--tinta-suave);
   border-top: 1px solid var(--papel);
 }
+
+/* ---------- Detalle del fallo (RN-029) ---------- */
+.bloque-fallo {
+  margin-top: 12px;
+  border-left: 3px solid var(--alerta);
+}
+
+.motivos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.motivo-fallo {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  font-weight: 500;
+}
+
+.motivo-fallo.activo {
+  color: var(--acento);
+  background: #e9f2f3;
+  border-color: var(--acento);
+  font-weight: 600;
+}
+
+@media (min-width: 600px) {
+  .motivos {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .motivo-fallo { width: auto; }
+}
