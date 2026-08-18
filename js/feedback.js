@@ -2,22 +2,21 @@
 // feedback.js
 // Proyecto: Asistente Inteligente de Materiales SAP - PAPELSA
 // ============================================================
-// Guarda la solicitud en la base de datos y gestiona la
-// encuesta de utilidad.
-//
-// El registro ocurre al generar la salida para SAP: es el
-// momento en que la solicitud queda realmente resuelta.
+// Registro de solicitudes, encuesta de utilidad, avisos de
+// busqueda, historial y metricas.
 // ============================================================
 
-// Identificador de la ultima solicitud guardada, para poder
-// asociarle el feedback.
 let solicitudGuardadaId = null;
 
 
+// ============================================================
+// REGISTRO DE LA SOLICITUD
+// ============================================================
+
 // ------------------------------------------------------------
 // guardarSolicitud()
-// RN-011 y trazabilidad: se guardan todos los candidatos
-// mostrados, no solo el elegido.
+// Se guardan todos los candidatos mostrados, no solo el
+// elegido: es lo que permite auditar un error meses despues.
 // ------------------------------------------------------------
 async function guardarSolicitud(solicitud, ms) {
 
@@ -55,17 +54,23 @@ async function guardarSolicitud(solicitud, ms) {
 }
 
 
+// ============================================================
+// ENCUESTA DE UTILIDAD (RN-029)
+// ============================================================
+
 // ------------------------------------------------------------
 // enviarFeedback()
 // ------------------------------------------------------------
-async function enviarFeedback(util) {
+async function enviarFeedback(util, motivo, esperado) {
 
   if (!solicitudGuardadaId) return false;
 
   const { error } = await db.rpc('registrar_feedback', {
     p_solicitud_id: solicitudGuardadaId,
     p_util: util,
-    p_comentario: null
+    p_comentario: null,
+    p_motivo: motivo || null,
+    p_esperado: esperado || null
   });
 
   if (error) {
@@ -79,11 +84,7 @@ async function enviarFeedback(util) {
 
 // ------------------------------------------------------------
 // pintarEncuesta()
-// RN-029: opcional, y no bloquea una nueva consulta.
-//
-// El "no" abre un formulario breve. Saber que algo fallo no
-// sirve si no se sabe QUE fallo: sin motivo, el dato no
-// permite corregir nada.
+// Opcional, y no bloquea una nueva consulta.
 // ------------------------------------------------------------
 function pintarEncuesta() {
   return '<div class="encuesta" id="encuesta">'
@@ -97,6 +98,7 @@ function pintarEncuesta() {
 
 // ------------------------------------------------------------
 // pintarDetalleFallo()
+// Saber que algo fallo no sirve si no se sabe QUE fallo.
 // Los motivos salen de los modos de fallo observados en el
 // piloto, no de categorias genericas.
 // ------------------------------------------------------------
@@ -136,53 +138,17 @@ function pintarDetalleFallo() {
 }
 
 
-// ------------------------------------------------------------
-// enviarFeedback()
-// ------------------------------------------------------------
-async function enviarFeedback(util, motivo, esperado) {
-
-  if (!solicitudGuardadaId) return false;
-
-  const { error } = await db.rpc('registrar_feedback', {
-    p_solicitud_id: solicitudGuardadaId,
-    p_util: util,
-    p_comentario: null,
-    p_motivo: motivo || null,
-    p_esperado: esperado || null
-  });
-
-  if (error) {
-    console.error('No se pudo registrar el feedback:', error.message);
-    return false;
-  }
-
-  return true;
-}
-// ------------------------------------------------------------
-// obtenerHistorial()
-// ------------------------------------------------------------
-async function obtenerHistorial(limite) {
-
-  const { data, error } = await db.rpc('mi_historial', {
-    p_limite: limite || 10
-  });
-
-  if (error) {
-    console.error('No se pudo leer el historial:', error.message);
-    return [];
-  }
-
-  return data || [];
-}
 // ============================================================
-// BUSQUEDAS SIN RESULTADO UTIL
+// AVISO DE BUSQUEDA
 // ============================================================
-// Se registran automaticamente. El aviso manual del ingeniero
-// anade contexto, pero el dato base se captura solo.
+// Disponible SIEMPRE, no solo cuando la busqueda falla.
+//
+// El peor caso no es que el sistema falle y lo sepa, sino que
+// devuelva algo plausible que no es lo que el ingeniero
+// buscaba: ahi el sistema cree que acerto, el ingeniero se va,
+// y no queda rastro.
 // ============================================================
 
-// Identificadores por orden de item, para asociar el reporte.
-let busquedasFallidas = {};
 // ------------------------------------------------------------
 // registrarBusquedaFallida()
 // Devuelve el identificador para que quien llama lo guarde.
@@ -207,7 +173,7 @@ async function registrarBusquedaFallida(consulta, nivel, total) {
 // ------------------------------------------------------------
 // reportarBusqueda()
 // ------------------------------------------------------------
-async function reportarBusqueda(idBusqueda, esperaba) {
+async function reportarBusqueda(idBusqueda, esperaba, motivo) {
 
   if (!idBusqueda) {
     console.error('No hay registro de busqueda al que asociar el aviso.');
@@ -216,8 +182,8 @@ async function reportarBusqueda(idBusqueda, esperaba) {
 
   const { data, error } = await db.rpc('reportar_busqueda', {
     p_id: idBusqueda,
-    p_esperaba: esperaba,
-    p_comentario: null
+    p_esperaba: esperaba || null,
+    p_comentario: motivo || null
   });
 
   if (error) {
@@ -227,34 +193,80 @@ async function reportarBusqueda(idBusqueda, esperaba) {
 
   return data === true;
 }
+
+
 // ------------------------------------------------------------
 // pintarAvisoBusqueda()
-// Aparece cuando no hay resultados o cuando la confianza es
-// baja: es el momento en que el ingeniero esta a punto de
-// abandonar y su informacion vale mas.
+// Se muestra plegado para no estorbar cuando todo va bien.
 // ------------------------------------------------------------
 function pintarAvisoBusqueda(orden) {
-  return '<div class="reporte-busqueda" data-orden="' + orden + '">'
-       + '<p class="reporte-titulo">¿No encontraste lo que buscabas?</p>'
-       + '<p class="reporte-ayuda">Dinos qué material esperabas. '
-       + 'Sirve para corregir el buscador.</p>'
-       + '<div class="reporte-campos">'
-       + '<input type="text" class="reporte-texto" '
-       + 'id="reporte-texto-' + orden + '" '
-       + 'placeholder="Ej: cinta aislante 3M negra">'
-       + '<button class="boton boton-discreto reporte-enviar" '
-       + 'data-orden="' + orden + '">Avisar</button>'
-       + '</div></div>';
+
+  const motivos = [
+    ['no_estaba',      'No aparece el que busco'],
+    ['orden_malo',     'Aparece, pero muy abajo'],
+    ['datos_erroneos', 'El stock o la ubicación no cuadran'],
+    ['no_entendio',    'Interpretó mal lo que escribí'],
+    ['otro',           'Otro motivo']
+  ];
+
+  let html = '<div class="reporte-busqueda" data-orden="' + orden + '">';
+
+  html += '<button class="abrir-reporte" data-orden="' + orden + '">'
+        + '¿No es esto lo que buscabas?</button>';
+
+  html += '<div class="reporte-cuerpo" id="reporte-cuerpo-' + orden + '">';
+
+  html += '<p class="reporte-ayuda">Cuéntanos qué pasó. '
+        + 'Es la forma más directa de corregir el buscador.</p>';
+
+  html += '<div class="motivos">';
+  motivos.forEach(function (m) {
+    html += '<button class="boton boton-discreto motivo-busqueda" '
+          + 'data-orden="' + orden + '" '
+          + 'data-motivo="' + m[0] + '">' + m[1] + '</button>';
+  });
+  html += '</div>';
+
+  html += '<div class="campo" style="margin:12px 0 10px">'
+        + '<label for="reporte-texto-' + orden + '">'
+        + '¿Qué material esperabas? (opcional)</label>'
+        + '<input type="text" class="reporte-texto" '
+        + 'id="reporte-texto-' + orden + '" '
+        + 'placeholder="Ej: disco de pulidora pequeño, el de 4 1/2">'
+        + '</div>';
+
+  html += '<button class="boton boton-discreto reporte-enviar" '
+        + 'data-orden="' + orden + '">Enviar</button>';
+
+  html += '</div></div>';
+  return html;
 }
+
+
 // ============================================================
 // HISTORIAL
 // ============================================================
 
 // ------------------------------------------------------------
+// obtenerHistorial()
+// ------------------------------------------------------------
+async function obtenerHistorial(limite) {
+
+  const { data, error } = await db.rpc('mi_historial', {
+    p_limite: limite || 10
+  });
+
+  if (error) {
+    console.error('No se pudo leer el historial:', error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
+
+// ------------------------------------------------------------
 // pintarHistorial()
-// Trazabilidad para el ingeniero: que pidio, cuando y si quedo
-// resuelto. Las politicas de seguridad ya impiden ver las
-// consultas de otros.
 // ------------------------------------------------------------
 function pintarHistorial(filas) {
 
@@ -313,11 +325,12 @@ async function cargarHistorial() {
   const filas = await obtenerHistorial(10);
   destino.innerHTML = pintarHistorial(filas);
 }
+
+
 // ------------------------------------------------------------
 // recuperarSalida()
 // El ingeniero copio la salida y perdio la ventana, o se
-// equivoco al pegar. Los datos ya estan guardados: no hay que
-// repetir la busqueda.
+// equivoco al pegar. Los datos ya estan guardados.
 // ------------------------------------------------------------
 async function recuperarSalida(solicitudId) {
 
@@ -329,7 +342,6 @@ async function recuperarSalida(solicitudId) {
     return null;
   }
 
-  // Se adapta a la forma que espera la salida SAP
   return {
     items: (data.items || []).map(function (f) {
       return {
@@ -347,16 +359,18 @@ async function recuperarSalida(solicitudId) {
     })
   };
 }
+
+
 // ============================================================
 // METRICAS DEL PILOTO
 // ============================================================
-// El tiempo ahorrado por consulta no se estima: se cuenta el
-// volumen. El valor por consulta se aplicara cuando exista una
-// medicion real del tiempo que hoy toma buscar en SAP.
+// El tiempo ahorrado no se estima: se cuenta el volumen. El
+// valor por consulta se aplicara cuando exista una medicion
+// real del tiempo que hoy toma buscar en SAP.
 // ============================================================
 
 async function obtenerMetricas(dias) {
-  const { data, error } = await db.rpc('metricas_admin', {
+  const { data, error } = await db.rpc('metricas_piloto', {
     p_dias: dias || 30
   });
   if (error) {
@@ -419,7 +433,7 @@ function pintarMetricas(m) {
   html += filaMetrica('Respuestas «no fue útil»', m.feedback_negativo || 0);
 
   html += '<h3 class="metricas-titulo">Fallos detectados</h3>';
-  html += filaMetrica('Búsquedas sin resultado útil',
+  html += filaMetrica('Búsquedas registradas',
                       m.busquedas_sin_resultado || 0);
   html += filaMetrica('Reportadas por el ingeniero',
                       m.busquedas_reportadas || 0);
