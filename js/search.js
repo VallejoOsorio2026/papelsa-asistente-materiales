@@ -187,8 +187,10 @@ function pintarItem(item) {
   html += '<p class="item-nivel">Nivel de confianza '
         + item.nivel + ' de 5 · ' + escapar(item.mensaje) + '</p>';
 
-  // El aviso tambien aparece con confianza baja: puede haber
-  // resultados y aun asi no ser lo que el ingeniero buscaba.
+    // El aviso esta disponible SIEMPRE, no solo cuando falla.
+  // El peor caso no es que el sistema falle y lo sepa, sino que
+  // devuelva algo plausible que no es lo que se buscaba: ahi
+  // cree que acerto, el ingeniero se va, y no queda rastro.
   const avisoBajo = (item.nivel <= 2);
 
   item.candidatos.forEach(function (c) {
@@ -197,9 +199,7 @@ function pintarItem(item) {
     html += pintarCandidato(c, item.orden, elegido, almacen);
   });
 
-  if (avisoBajo) {
-    html += pintarAvisoBusqueda(item.orden);
-  }
+  html += pintarAvisoBusqueda(item.orden);
 
   html += '</div></div>';
   return html;
