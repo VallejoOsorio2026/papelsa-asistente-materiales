@@ -51,19 +51,16 @@ async function nuevaSolicitud(mensaje, informar) {
       elegido:         null
     };
 
-    // Registro automatico: no depende de que el ingeniero avise.
-    // El identificador se guarda en el propio item, no en una
-    // variable global, para no depender del orden de carga de
-    // los archivos.
-    if (respuesta.nivel <= 2 || candidatos.length === 0) {
-      nuevoItem.idBusqueda = await registrarBusquedaFallida(
-        it.texto, respuesta.nivel, candidatos.length
-      );
-    }
-
-    solicitudActual.items.push(nuevoItem);
-  }
-
+        // Se registra TODA busqueda, no solo las que fallan.
+    //
+    // El ingeniero que abandona sin seleccionar nada es el caso
+    // que mas interesa, y era justo el que no quedaba
+    // registrado: la encuesta solo aparecia despues de generar
+    // la salida, lo que obligaba a fingir una seleccion para
+    // poder decir que no sirvio.
+    nuevoItem.idBusqueda = await registrarBusquedaFallida(
+      it.texto, respuesta.nivel, candidatos.length
+    );
   // Preseleccion solo con nivel 5, y solo si el material tiene
   // una unica ubicacion: si hay varias, decide el ingeniero
   // de donde se retira (RN-024, ADR-003).
