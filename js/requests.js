@@ -51,7 +51,7 @@ async function nuevaSolicitud(mensaje, informar) {
       elegido:         null
     };
 
-        // Se registra TODA busqueda, no solo las que fallan.
+    // Se registra TODA busqueda, no solo las que fallan.
     //
     // El ingeniero que abandona sin seleccionar nada es el caso
     // que mas interesa, y era justo el que no quedaba
@@ -61,6 +61,10 @@ async function nuevaSolicitud(mensaje, informar) {
     nuevoItem.idBusqueda = await registrarBusquedaFallida(
       it.texto, respuesta.nivel, candidatos.length
     );
+
+    solicitudActual.items.push(nuevoItem);
+  }
+
   // Preseleccion solo con nivel 5, y solo si el material tiene
   // una unica ubicacion: si hay varias, decide el ingeniero
   // de donde se retira (RN-024, ADR-003).
