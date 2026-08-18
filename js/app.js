@@ -420,7 +420,13 @@ function refrescarSolicitud() {
     campo.addEventListener('click', function (e) { e.stopPropagation(); });
   });
 
-  // Aviso de busqueda: disponible siempre, plegado
+    // Aviso de busqueda: disponible siempre, plegado.
+  // El clic no debe propagarse a la cabecera del item, que
+  // tambien es desplegable y cerraria el bloque entero.
+  destino.querySelectorAll('.reporte-busqueda').forEach(function (caja) {
+    caja.addEventListener('click', function (e) { e.stopPropagation(); });
+  });
+
   destino.querySelectorAll('.abrir-reporte').forEach(function (boton) {
     boton.addEventListener('click', function (e) {
       e.stopPropagation();
@@ -431,20 +437,6 @@ function refrescarSolicitud() {
       this.classList.toggle('activo', abierto);
     });
   });
-
-  // Motivo del fallo
-  destino.querySelectorAll('.motivo-busqueda').forEach(function (boton) {
-    boton.addEventListener('click', function (e) {
-      e.stopPropagation();
-      const orden = this.dataset.orden;
-      destino.querySelectorAll(
-        '.motivo-busqueda[data-orden="' + orden + '"]'
-      ).forEach(function (b) { b.classList.remove('activo'); });
-      this.classList.add('activo');
-      motivosElegidos[orden] = this.dataset.motivo;
-    });
-  });
-
   // Envio del aviso
   destino.querySelectorAll('.reporte-enviar').forEach(function (boton) {
     boton.addEventListener('click', async function (e) {
