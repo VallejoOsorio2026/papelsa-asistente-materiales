@@ -7,7 +7,7 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | PENDIENTE-002 | Almacén físico del Corrugador. La muestra de 500 filas respalda el valor asumido: 124 filas cruzan ese centro con ese almacén, sin excepciones. Falta confirmación formal antes de darlo por validado. | Abierto · con evidencia | Confirmación del responsable |
 | PENDIENTE-006 | Variantes fonéticas de palabras extranjeras. Las consultas `craf` y `carft` devuelven ruido en las primeras posiciones (curva, cuchilla, carriage). El material correcto aparece, pero no encabeza. Causa probable: el algoritmo fonético colapsa consonantes distintas. La consulta `kra` sí funciona correctamente. | Abierto | Fase 14, capa de sinónimos |
 | PENDIENTE-008 | Validación del pegado en SAP real. El bloque de nueve columnas separadas por tabulador se verificó en Excel y las columnas caen correctamente. Falta comprobarlo en la pantalla de SAP. | Abierto | Cuando haya acceso a SAP |
-
+| PENDIENTE-009 | El sustantivo principal no pesa más que los calificativos. En «disco pulidora pequeño», una guarda para pulidora de 4-1/2" encabeza sobre los discos de 4-1/2", porque contiene las mismas palabras. Idea a evaluar: dar más peso cuando la palabra coincide al inicio de la descripción del material (`DISCO PULIR...` frente a `GUARDA PARA PULIDORA...`), en lugar de intentar identificar cuál es el sustantivo. **No se implementa sin medición**: el ajuste podría mejorar este caso y empeorar otros. | Abierto | Banco de pruebas |
 ## Cerrados
 
 | ID | Descripción | Cerrado el | Resolución |
