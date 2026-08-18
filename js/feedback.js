@@ -80,16 +80,84 @@ async function enviarFeedback(util) {
 // ------------------------------------------------------------
 // pintarEncuesta()
 // RN-029: opcional, y no bloquea una nueva consulta.
+//
+// El "no" abre un formulario breve. Saber que algo fallo no
+// sirve si no se sabe QUE fallo: sin motivo, el dato no
+// permite corregir nada.
 // ------------------------------------------------------------
 function pintarEncuesta() {
   return '<div class="encuesta" id="encuesta">'
        + '<span class="encuesta-pregunta">¿Te fue útil?</span>'
        + '<button class="boton boton-discreto" id="feedback-si">Sí</button>'
        + '<button class="boton boton-discreto" id="feedback-no">No</button>'
-       + '</div>';
+       + '</div>'
+       + '<div class="detalle-fallo" id="detalle-fallo"></div>';
 }
 
 
+// ------------------------------------------------------------
+// pintarDetalleFallo()
+// Los motivos salen de los modos de fallo observados en el
+// piloto, no de categorias genericas.
+// ------------------------------------------------------------
+function pintarDetalleFallo() {
+
+  const motivos = [
+    ['no_estaba',      'El material que buscaba no apareció'],
+    ['orden_malo',     'Apareció, pero muy abajo en la lista'],
+    ['datos_erroneos', 'El stock o la ubicación no coincidían'],
+    ['no_entendio',    'Interpretó mal lo que escribí'],
+    ['otro',           'Otro motivo']
+  ];
+
+  let html = '<div class="panel bloque-fallo">';
+  html += '<p class="reporte-titulo">¿Qué falló?</p>';
+  html += '<p class="reporte-ayuda">Ayuda a corregir el buscador. '
+        + 'Toma unos segundos.</p>';
+
+  html += '<div class="motivos">';
+  motivos.forEach(function (m) {
+    html += '<button class="boton boton-discreto motivo-fallo" '
+          + 'data-motivo="' + m[0] + '">' + m[1] + '</button>';
+  });
+  html += '</div>';
+
+  html += '<div class="campo" style="margin-top:14px">'
+        + '<label for="esperado">¿Qué material esperabas? '
+        + '(opcional)</label>'
+        + '<input type="text" id="esperado" '
+        + 'placeholder="Ej: disco de pulidora pequeño, el de 4 1/2">'
+        + '</div>';
+
+  html += '<button class="boton" id="enviar-fallo">Enviar</button>';
+  html += '</div>';
+
+  return html;
+}
+
+
+// ------------------------------------------------------------
+// enviarFeedback()
+// ------------------------------------------------------------
+async function enviarFeedback(util, motivo, esperado) {
+
+  if (!solicitudGuardadaId) return false;
+
+  const { error } = await db.rpc('registrar_feedback', {
+    p_solicitud_id: solicitudGuardadaId,
+    p_util: util,
+    p_comentario: null,
+    p_motivo: motivo || null,
+    p_esperado: esperado || null
+  });
+
+  if (error) {
+    console.error('No se pudo registrar el feedback:', error.message);
+    return false;
+  }
+
+  return true;
+}
 // ------------------------------------------------------------
 // obtenerHistorial()
 // ------------------------------------------------------------
