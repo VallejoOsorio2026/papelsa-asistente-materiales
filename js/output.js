@@ -7,7 +7,12 @@
 // RN-027: nueve columnas separadas por tabulador, en el orden
 // exacto de la pantalla de SAP:
 //
-//   Componente · Denominacion · TE · Ctd. Neces. · UM ·
+//   Componente · Denominacion · Ctd. Neces. · UM · T · S ·
+//   Almacen · Centro
+//
+// La columna TE aparece en la pantalla de SAP pero no admite
+// valor al pegar: incluirla desplazaba todos los datos una
+// posicion a la derecha.
 //   T · S · Almacen · Centro
 //
 // TE y S van siempre vacias. T lleva siempre la letra L.
@@ -19,7 +24,6 @@
 const ENCABEZADOS_SAP = [
   'Componente',
   'Denominación',
-  'TE',
   'Ctd. Neces.',
   'UM',
   'T',
@@ -27,7 +31,6 @@ const ENCABEZADOS_SAP = [
   'Almacén',
   'Centro'
 ];
-
 
 // ------------------------------------------------------------
 // construirFilasSAP()
@@ -41,7 +44,6 @@ function construirFilasSAP(solicitud) {
       return [
         m.material,          // Componente
         m.descripcion,       // Denominación
-        '',                  // TE  (siempre vacío)
         String(i.cantidad),  // Ctd. Neces.
         m.unidad || '',      // UM
         'L',                 // T   (siempre L)
