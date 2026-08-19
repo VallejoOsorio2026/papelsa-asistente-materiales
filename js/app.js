@@ -439,8 +439,13 @@ function refrescarSolicitud() {
     // Aviso de busqueda: disponible siempre, plegado.
   // El clic no debe propagarse a la cabecera del item, que
   // tambien es desplegable y cerraria el bloque entero.
+  // Se detiene la propagacion hacia la cabecera del item, que
+  // tambien es desplegable, pero SIN bloquear los clics de los
+  // controles internos.
   destino.querySelectorAll('.reporte-busqueda').forEach(function (caja) {
-    caja.addEventListener('click', function (e) { e.stopPropagation(); });
+    caja.addEventListener('click', function (e) {
+      if (e.target === this) e.stopPropagation();
+    });
   });
 
   destino.querySelectorAll('.abrir-reporte').forEach(function (boton) {
