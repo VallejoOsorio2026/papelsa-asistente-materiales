@@ -9,18 +9,22 @@
 
 // ------------------------------------------------------------
 // buscar()
+// p_desde permite ampliar sin perder los resultados que ya
+// se mostraron.
 // ------------------------------------------------------------
-async function buscar(consulta) {
+async function buscar(consulta, limite) {
 
   const { data, error } = await db.rpc('consultar_materiales', {
     p_consulta: consulta,
-    p_limite: 5
+    p_limite: limite || 5,
+    p_desde: 0
   });
 
   if (error) {
     return {
       nivel: 1,
       total: 0,
+      hay_mas: false,
       mensaje: 'No se pudo completar la busqueda: ' + error.message,
       resultados: []
     };
@@ -28,8 +32,6 @@ async function buscar(consulta) {
 
   return data;
 }
-
-
 // ------------------------------------------------------------
 // escapar()
 // Evita que el texto del inventario se interprete como HTML.
@@ -198,7 +200,13 @@ function pintarItem(item) {
     const almacen = elegido ? item.elegido.almacen : null;
     html += pintarCandidato(c, item.orden, elegido, almacen);
   });
-
+  // Ampliar sin perder lo ya mostrado. El tope es 15: mas alla
+  // no se pagina, se pregunta.
+  if (item.hayMas) {
+    html += '<button class="boton boton-discreto ver-mas" '
+          + 'data-orden="' + item.orden + '">'
+          + 'Ver más resultados</button>';
+  }
   html += pintarAvisoBusqueda(item.orden);
 
   html += '</div></div>';
