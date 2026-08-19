@@ -1138,3 +1138,11 @@ a:hover { color: var(--acento-vivo); }
 @media (prefers-reduced-motion: reduce) {
   .abrir-reporte::after { transition: none; }
 }
+
+/* Motivo seleccionado en el aviso de búsqueda */
+.motivo-busqueda.activo {
+  color: var(--acento);
+  background: #e9f2f3;
+  border-color: var(--acento);
+  font-weight: 600;
+}
