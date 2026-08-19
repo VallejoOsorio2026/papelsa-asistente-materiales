@@ -48,6 +48,8 @@ async function nuevaSolicitud(mensaje, informar) {
       mensaje:         respuesta.mensaje,
       candidatos:      candidatos,
       idBusqueda:      null,
+      hayMas:          respuesta.hay_mas === true,
+      limite:          5,
       elegido:         null
     };
 
@@ -133,6 +135,9 @@ function elegirUbicacion(orden, clave) {
     disponible:   ubi ? ubi.disponible : 0,
     comprometido: ubi ? ubi.comprometido : 0
   };
+
+  // Cierra el ciclo de la busqueda: se eligio algo
+  marcarResuelta(orden, true);
 }
 
 
@@ -173,5 +178,51 @@ function itemsResueltos() {
   if (!solicitudActual) return [];
   return solicitudActual.items.filter(function (i) {
     return i.elegido !== null;
+  });
+}
+
+
+// ------------------------------------------------------------
+// ampliarItem()
+// Amplia los resultados de un item sin perder los que ya
+// estaban. Cada ampliacion se registra: es la senal mas
+// honesta de que el ranking no acerto, porque no depende de
+// que el ingeniero se moleste en escribir un aviso.
+// ------------------------------------------------------------
+async function ampliarItem(orden) {
+
+  const item = solicitudActual.items.find(function (i) {
+    return i.orden === orden;
+  });
+  if (!item) return;
+
+  const nuevoLimite = Math.min(item.limite + 5, 15);
+  const respuesta = await buscar(item.texto, nuevoLimite);
+
+  item.candidatos = respuesta.resultados || [];
+  item.limite     = nuevoLimite;
+  item.hayMas     = respuesta.hay_mas === true && nuevoLimite < 15;
+
+  if (item.idBusqueda) {
+    await db.rpc('registrar_ampliacion', { p_id: item.idBusqueda });
+  }
+}
+
+
+// ------------------------------------------------------------
+// marcarResuelta()
+// Cierra el ciclo: permite saber si la ampliacion sirvio de
+// algo o si el ingeniero se rindio.
+// ------------------------------------------------------------
+async function marcarResuelta(orden, resuelta) {
+
+  const item = solicitudActual.items.find(function (i) {
+    return i.orden === orden;
+  });
+  if (!item || !item.idBusqueda) return;
+
+  await db.rpc('marcar_busqueda_resuelta', {
+    p_id: item.idBusqueda,
+    p_resuelta: resuelta
   });
 }
