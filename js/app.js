@@ -419,7 +419,23 @@ function refrescarSolicitud() {
     });
     campo.addEventListener('click', function (e) { e.stopPropagation(); });
   });
+  // Ver mas resultados sin perder los ya mostrados
+  destino.querySelectorAll('.ver-mas').forEach(function (boton) {
+    boton.addEventListener('click', async function (e) {
+      e.stopPropagation();
 
+      const orden = Number(this.dataset.orden);
+
+      this.disabled = true;
+      this.textContent = 'Buscando…';
+
+      await ampliarItem(orden);
+
+      // El bloque debe seguir abierto tras ampliar
+      bloquesAbiertos[orden] = true;
+      refrescarSolicitud();
+    });
+  });
     // Aviso de busqueda: disponible siempre, plegado.
   // El clic no debe propagarse a la cabecera del item, que
   // tambien es desplegable y cerraria el bloque entero.
