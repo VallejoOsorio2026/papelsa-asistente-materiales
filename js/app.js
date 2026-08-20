@@ -678,3 +678,55 @@ function conectarBotonesHistorial() {
     });
   });
 }
+
+
+// ------------------------------------------------------------
+// enviarSolicitud()
+// El mecanico o contratista envia al ingeniero, que sigue
+// siendo quien decide (RN-024).
+// ------------------------------------------------------------
+async function enviarSolicitud() {
+
+  const boton  = document.getElementById('boton-enviar-solicitud');
+  const nombre = document.getElementById('sol-nombre').value.trim();
+  const orden  = document.getElementById('sol-orden').value.trim();
+
+  ocultarAviso('aviso-solicitud');
+
+  if (nombre.length < 3) {
+    mostrarAviso('aviso-solicitud', 'Escribe tu nombre completo.', 'error');
+    document.getElementById('sol-nombre').focus();
+    return;
+  }
+
+  if (!validarOrden(orden)) {
+    mostrarAviso('aviso-solicitud',
+      'La orden de trabajo debe tener exactamente 7 dígitos, '
+      + 'sin letras ni símbolos.', 'error');
+    document.getElementById('sol-orden').focus();
+    return;
+  }
+
+  boton.disabled = true;
+  boton.textContent = 'Enviando…';
+
+  const r = await enviarSolicitudMateriales(nombre, orden);
+
+  boton.disabled = false;
+  boton.textContent = 'Enviar solicitud';
+
+  if (!r.ok) {
+    mostrarAviso('aviso-solicitud', r.mensaje, 'error');
+    return;
+  }
+
+  // La solicitud queda registrada aunque el correo aun no
+  // este configurado: el ingeniero la ve en su bandeja.
+  document.getElementById('bloque-solicitud').innerHTML =
+    '<h2>Solicitud enviada</h2>'
+    + '<p class="encuesta-gracias">' + escapar(r.mensaje) + '</p>'
+    + '<p class="ayuda-buscador">Orden ' + escapar(orden)
+    + ' · ' + escapar(nombre) + '</p>';
+
+  await guardarSolicitud(solicitudActual, solicitudActual.tiempoMs || null);
+}
