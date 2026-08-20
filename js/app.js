@@ -490,7 +490,28 @@ function refrescarSolicitud() {
         : '<p class="reporte-ayuda">No se pudo enviar el aviso.</p>';
     });
   });
+  // Envio de solicitud (mecanico y contratista)
+  const botonEnviar = document.getElementById('boton-enviar-solicitud');
+  if (botonEnviar) {
+    botonEnviar.addEventListener('click', enviarSolicitud);
+  }
 
+  const botonExcel = document.getElementById('boton-excel');
+  if (botonExcel) {
+    botonExcel.addEventListener('click', function () {
+      const orden = (document.getElementById('sol-orden') || {}).value || '';
+      const nombre = (document.getElementById('sol-nombre') || {}).value || '';
+      if (!validarOrden(orden)) {
+        mostrarAviso('aviso-solicitud',
+          'Escribe la orden de trabajo: 7 dígitos.', 'error');
+        return;
+      }
+      descargarExcel(solicitudActual, {
+        orden: orden.trim(),
+        solicitante: nombre.trim() || 'sin nombre'
+      });
+    });
+  }
   // Salida para SAP
   const botonSalida = document.getElementById('boton-salida');
   if (botonSalida) {
