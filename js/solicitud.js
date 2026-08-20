@@ -111,3 +111,145 @@ async function enviarSolicitudMateriales(solicitante, orden) {
 
   return data;
 }
+
+
+// ============================================================
+// BANDEJA DEL INGENIERO
+// ============================================================
+// Las solicitudes se ven aqui aunque el correo falle o caiga
+// en spam. El correo es el aviso; esta bandeja es el registro.
+// ============================================================
+
+// ------------------------------------------------------------
+// recibeSolicitudes()
+// ------------------------------------------------------------
+function recibeSolicitudes() {
+  return perfilActual !== null
+      && (perfilActual.recibe_solicitudes === true
+       || perfilActual.rol === 'admin');
+}
+
+
+// ------------------------------------------------------------
+// obtenerBandeja()
+// ------------------------------------------------------------
+async function obtenerBandeja() {
+  const { data, error } = await db.rpc('solicitudes_pendientes', {
+    p_limite: 20
+  });
+  if (error) {
+    console.error('No se pudo leer la bandeja:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+
+// ------------------------------------------------------------
+// pintarBandeja()
+// ------------------------------------------------------------
+function pintarBandeja(filas) {
+
+  if (!filas || filas.length === 0) {
+    return '<p class="ayuda-buscador">No hay solicitudes pendientes.</p>';
+  }
+
+  let html = '';
+
+  filas.forEach(function (s) {
+
+    const fecha = new Date(s.creada_en).toLocaleString('es-CO', {
+      day: '2-digit', month: 'short',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const nueva = s.estado === 'nueva';
+
+    html += '<div class="solicitud-fila' + (nueva ? ' nueva' : '') + '">';
+
+    html += '<div class="solicitud-cabecera">'
+          + '<span class="dato solicitud-orden">OT '
+          + escapar(s.orden_trabajo) + '</span>'
+          + '<span class="solicitud-fecha">' + fecha + '</span>'
+          + '</div>';
+
+    html += '<p class="solicitud-quien">'
+          + escapar(s.solicitante)
+          + ' <span class="etiqueta-rol">'
+          + escapar(s.rol_solicitante) + '</span></p>';
+
+    // Materiales pedidos
+    html += '<div class="solicitud-materiales">';
+    (s.materiales || []).forEach(function (m) {
+      html += '<div class="linea-estado">'
+            + '<span><span class="dato">' + escapar(m.componente)
+            + '</span> · ' + escapar(m.denominacion) + '</span>'
+            + '<span class="dato">' + escapar(m.cantidad) + ' '
+            + escapar(m.um) + ' · ' + escapar(m.centro) + '/'
+            + escapar(m.almacen) + '</span></div>';
+    });
+    html += '</div>';
+
+    // El correo puede no haberse enviado todavia
+    if (s.estado_correo === 'pendiente') {
+      html += '<p class="ayuda-campo">Aviso por correo pendiente de envío.</p>';
+    }
+
+    html += '<div class="solicitud-acciones">'
+          + '<button class="boton boton-discreto bandeja-salida" '
+          + 'data-id="' + escapar(s.id) + '">Ver salida SAP</button>'
+          + '<button class="boton boton-discreto bandeja-atender" '
+          + 'data-id="' + escapar(s.id) + '">Marcar atendida</button>'
+          + '</div>';
+
+    html += '</div>';
+  });
+
+  return html;
+}
+
+
+// ------------------------------------------------------------
+// cargarBandeja()
+// ------------------------------------------------------------
+async function cargarBandeja() {
+  const destino = document.getElementById('lista-bandeja');
+  if (!destino) return;
+
+  destino.innerHTML = '<p class="ayuda-buscador">Cargando…</p>';
+  const filas = await obtenerBandeja();
+  destino.innerHTML = pintarBandeja(filas);
+
+  const contador = document.getElementById('contador-bandeja');
+  if (contador) {
+    const nuevas = filas.filter(function (s) {
+      return s.estado === 'nueva';
+    }).length;
+    contador.textContent = nuevas > 0 ? nuevas : '';
+    contador.style.display = nuevas > 0 ? 'inline-flex' : 'none';
+  }
+}
+
+
+// ------------------------------------------------------------
+// salidaDeSolicitudMateriales()
+// Convierte la solicitud recibida al formato de la salida SAP.
+// ------------------------------------------------------------
+function salidaDeSolicitudMateriales(materiales) {
+  return {
+    items: (materiales || []).map(function (m, i) {
+      return {
+        orden: i + 1,
+        cantidad: m.cantidad,
+        cantidadAsumida: false,
+        elegido: {
+          material:    m.componente,
+          descripcion: m.denominacion,
+          unidad:      m.um,
+          centro:      m.centro,
+          almacen:     m.almacen
+        }
+      };
+    })
+  };
+}
