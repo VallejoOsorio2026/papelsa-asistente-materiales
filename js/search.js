@@ -88,14 +88,17 @@ function pintarSolicitud(solicitud) {
   const pendientes = solicitud.items.filter(function (i) {
     return i.elegido === null;
   }).length;
-
+  const soyElQuePide = (typeof esSolicitante === 'function')
+                     && esSolicitante();
   if (pendientes === 0) {
     html += '<div class="aviso aviso-ok visible">'
           + '<strong>Todo listo.</strong> '
           + solicitud.items.length + ' material'
           + (solicitud.items.length > 1 ? 'es' : '')
           + ' seleccionado' + (solicitud.items.length > 1 ? 's' : '')
-          + '. Genera la salida para SAP.'
+          + (soyElQuePide
+             ? '. Completa los datos y envía la solicitud.'
+             : '. Genera la salida para SAP.')
           + '</div>';
   } else {
     html += '<div class="aviso aviso-atencion visible">'
@@ -109,7 +112,17 @@ function pintarSolicitud(solicitud) {
     html += pintarItem(item);
   });
 
-  if (pendientes === 0) {
+    // El solicitante envia al ingeniero; el ingeniero genera la
+  // salida para SAP. Cada rol ve la accion que le corresponde.
+  const resueltos = solicitud.items.filter(function (i) {
+    return i.elegido !== null;
+  }).length;
+
+  if (typeof esSolicitante === 'function' && esSolicitante()) {
+    if (resueltos > 0) {
+      html += pintarFormularioSolicitud(solicitud);
+    }
+  } else if (pendientes === 0) {
     html += '<button id="boton-salida" class="boton" '
           + 'style="margin-top:16px">Generar salida para SAP</button>';
   }
