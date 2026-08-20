@@ -1146,3 +1146,35 @@ a:hover { color: var(--acento-vivo); }
   border-color: var(--acento);
   font-weight: 600;
 }
+
+/* ============================================================
+   SOLICITUD DE MATERIALES
+   ============================================================
+   La usan mecanicos y contratistas, a veces desde el telefono
+   y con guantes. Campos grandes y accion clara.
+   ============================================================ */
+
+.bloque-solicitud {
+  margin-top: 18px;
+  border-left: 3px solid var(--lima);
+}
+
+.bloque-solicitud h2 {
+  font-family: var(--marca);
+  font-size: 17px;
+}
+
+.ayuda-campo {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--tinta-suave);
+}
+
+/* La orden de trabajo se teclea en el movil: cifras grandes
+   y separadas para no equivocarse con siete digitos */
+#sol-orden {
+  font-size: 20px;
+  letter-spacing: .12em;
+  text-align: center;
+}
