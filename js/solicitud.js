@@ -109,8 +109,22 @@ async function enviarSolicitudMateriales(solicitante, orden) {
     return { ok: false, mensaje: 'No se pudo enviar: ' + error.message };
   }
 
+  // Envio inmediato: un mecanico de madrugada no puede esperar
+  // a que una tarea programada revise la cola. Si falla, la
+  // solicitud queda en cola y se reintenta.
+  if (data.ok && data.id) {
+    try {
+      const envio = await db.functions.invoke('enviar-correo', {
+        body: { solicitud_id: data.id }
+      });
+      data.correo = envio.data || { ok: false };
+    } catch (e) {
+      console.error('El aviso por correo quedo en cola:', e);
+      data.correo = { ok: false, sin_servicio: true };
+    }
+  }
+
   return data;
-}
 
 
 // ============================================================
