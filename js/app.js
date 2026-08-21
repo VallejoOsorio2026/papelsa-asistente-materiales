@@ -76,7 +76,20 @@ function conectarBotones() {
       if (abierto) await cargarMetricas();
     });
   }
-
+  // Bandeja de solicitudes recibidas
+  const cabBandeja = document.getElementById('bandeja-cabecera');
+  if (cabBandeja) {
+    cabBandeja.addEventListener('click', async function () {
+      const lista  = document.getElementById('lista-bandeja');
+      const flecha = document.getElementById('flecha-bandeja');
+      const abierto = lista.classList.toggle('visible');
+      if (flecha) flecha.classList.toggle('abierta', abierto);
+      if (abierto) {
+        await cargarBandeja();
+        conectarBandeja();
+      }
+    });
+  }
   // Historial desplegable
   const cabHistorial = document.getElementById('historial-cabecera');
   if (cabHistorial) {
@@ -167,7 +180,12 @@ async function abrirAplicacion(perfil) {
   // Los paneles de administracion solo se muestran al admin.
   // Ocultarlos no es una medida de seguridad: la proteccion
   // real esta en las politicas de la base de datos.
-  if (esAdministrador()) {
+  // La bandeja la ven quienes reciben solicitudes de su area
+  if (typeof recibeSolicitudes === 'function' && recibeSolicitudes()) {
+    document.getElementById('panel-bandeja').style.display = 'block';
+    cargarBandeja().then(conectarBandeja);
+  }
+  
     document.getElementById('panel-metricas').style.display = 'block';
     document.getElementById('panel-carga').style.display = 'block';
     document.getElementById('panel-revertir').style.display = 'block';
@@ -729,4 +747,63 @@ async function enviarSolicitud() {
     + ' · ' + escapar(nombre) + '</p>';
 
   await guardarSolicitud(solicitudActual, solicitudActual.tiempoMs || null);
+}
+
+
+// ------------------------------------------------------------
+// conectarBandeja()
+// ------------------------------------------------------------
+function conectarBandeja() {
+
+  // Ver la salida SAP de una solicitud recibida
+  document.querySelectorAll('.bandeja-salida').forEach(function (boton) {
+    boton.addEventListener('click', async function (e) {
+      e.stopPropagation();
+
+      const fila = this.closest('.solicitud-fila');
+      const filas = await obtenerBandeja();
+      const s = filas.find(function (x) { return x.id === this.dataset.id; }
+                          .bind(this));
+      if (!s) return;
+
+      solicitudActual = salidaDeSolicitudMateriales(s.materiales);
+
+      const previa = document.getElementById('zona-salida');
+      if (previa) previa.remove();
+
+      const zona = document.createElement('div');
+      zona.id = 'zona-salida';
+      zona.innerHTML = pintarSalida(solicitudActual);
+      fila.appendChild(zona);
+
+      conectarBotonCopiar();
+      zona.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+
+  // Marcar como atendida
+  document.querySelectorAll('.bandeja-atender').forEach(function (boton) {
+    boton.addEventListener('click', async function (e) {
+      e.stopPropagation();
+
+      this.disabled = true;
+      this.textContent = 'Guardando…';
+
+      const { error } = await db.rpc('marcar_solicitud', {
+        p_id: this.dataset.id,
+        p_estado: 'atendida',
+        p_nota: null
+      });
+
+      if (error) {
+        this.disabled = false;
+        this.textContent = 'Marcar atendida';
+        alert('No se pudo marcar: ' + error.message);
+        return;
+      }
+
+      await cargarBandeja();
+      conectarBandeja();
+    });
+  });
 }
