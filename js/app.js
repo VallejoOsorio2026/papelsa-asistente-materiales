@@ -192,7 +192,7 @@ async function abrirAplicacion(perfil) {
     document.getElementById('panel-revertir').style.display = 'block';
   }
   actualizarEstado();
-}
+  }
 
 
 // ------------------------------------------------------------
