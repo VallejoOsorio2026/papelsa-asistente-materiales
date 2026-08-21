@@ -1262,3 +1262,32 @@ a:hover { color: var(--acento-vivo); }
 @media (max-width: 480px) {
   .solicitud-acciones .boton { width: 100%; }
 }
+
+/* ---------- Copiar el número de orden ---------- */
+.solicitud-orden-grupo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.copiar-orden {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--tinta-suave);
+  background: transparent;
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.copiar-orden:hover {
+  color: var(--acento);
+  border-color: var(--acento);
+  background: var(--papel);
+}
