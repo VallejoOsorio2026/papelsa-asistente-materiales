@@ -780,7 +780,21 @@ function conectarBandeja() {
       zona.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   });
-
+  // Copiar el numero de orden: el ingeniero lo necesita en SAP
+  // y teclear siete digitos a mano invita a errores.
+  document.querySelectorAll('.copiar-orden').forEach(function (boton) {
+    boton.addEventListener('click', async function (e) {
+      e.stopPropagation();
+      try {
+        await navigator.clipboard.writeText(this.dataset.orden);
+        this.textContent = '✓';
+        const b = this;
+        setTimeout(function () { b.textContent = '⧉'; }, 1500);
+      } catch (err) {
+        console.error('No se pudo copiar:', err);
+      }
+    });
+  });
   // Marcar como atendida
   document.querySelectorAll('.bandeja-atender').forEach(function (boton) {
     boton.addEventListener('click', async function (e) {
