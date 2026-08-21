@@ -177,20 +177,20 @@ async function abrirAplicacion(perfil) {
 
   cambiarPantalla('pantalla-app');
 
-  // Los paneles de administracion solo se muestran al admin.
-  // Ocultarlos no es una medida de seguridad: la proteccion
-  // real esta en las politicas de la base de datos.
-  // La bandeja la ven quienes reciben solicitudes de su area
+    // La bandeja la ven quienes reciben solicitudes de su area
   if (typeof recibeSolicitudes === 'function' && recibeSolicitudes()) {
     document.getElementById('panel-bandeja').style.display = 'block';
     cargarBandeja().then(conectarBandeja);
   }
-  
+
+  // Los paneles de administracion solo se muestran al admin.
+  // Ocultarlos no es una medida de seguridad: la proteccion
+  // real esta en las politicas de la base de datos.
+  if (esAdministrador()) {
     document.getElementById('panel-metricas').style.display = 'block';
     document.getElementById('panel-carga').style.display = 'block';
     document.getElementById('panel-revertir').style.display = 'block';
   }
-
   actualizarEstado();
 }
 
@@ -762,8 +762,8 @@ function conectarBandeja() {
 
       const fila = this.closest('.solicitud-fila');
       const filas = await obtenerBandeja();
-      const s = filas.find(function (x) { return x.id === this.dataset.id; }
-                          .bind(this));
+      const idBuscado = this.dataset.id;
+      const s = filas.find(function (x) { return x.id === idBuscado; });
       if (!s) return;
 
       solicitudActual = salidaDeSolicitudMateriales(s.materiales);
