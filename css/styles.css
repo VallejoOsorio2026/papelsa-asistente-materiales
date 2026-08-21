@@ -1178,3 +1178,87 @@ a:hover { color: var(--acento-vivo); }
   letter-spacing: .12em;
   text-align: center;
 }
+
+/* ============================================================
+   BANDEJA DE SOLICITUDES RECIBIDAS
+   ============================================================
+   El ingeniero la mira de madrugada: lo nuevo tiene que
+   distinguirse de un vistazo.
+   ============================================================ */
+
+.contador-bandeja {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  margin-left: 8px;
+  padding: 0 6px;
+  font-family: var(--dato);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--error);
+  border-radius: 11px;
+}
+
+.solicitud-fila {
+  padding: 14px;
+  margin-bottom: 12px;
+  background: var(--papel);
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.solicitud-fila.nueva {
+  border-left-color: var(--lima);
+  background: var(--superficie);
+}
+
+.solicitud-cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.solicitud-orden {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--acento);
+}
+
+.solicitud-fecha {
+  font-size: 12px;
+  color: var(--tinta-suave);
+}
+
+.solicitud-quien {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.solicitud-materiales {
+  padding: 10px 12px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.solicitud-fila.nueva .solicitud-materiales {
+  background: var(--papel);
+}
+
+.solicitud-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+@media (max-width: 480px) {
+  .solicitud-acciones .boton { width: 100%; }
+}
