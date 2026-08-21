@@ -168,8 +168,14 @@ function pintarBandeja(filas) {
     html += '<div class="solicitud-fila' + (nueva ? ' nueva' : '') + '">';
 
     html += '<div class="solicitud-cabecera">'
+          + '<span class="solicitud-orden-grupo">'
           + '<span class="dato solicitud-orden">OT '
           + escapar(s.orden_trabajo) + '</span>'
+          + '<button class="copiar-orden" '
+          + 'data-orden="' + escapar(s.orden_trabajo) + '" '
+          + 'title="Copiar número de orden" '
+          + 'aria-label="Copiar número de orden">⧉</button>'
+          + '</span>'
           + '<span class="solicitud-fecha">' + fecha + '</span>'
           + '</div>';
 
