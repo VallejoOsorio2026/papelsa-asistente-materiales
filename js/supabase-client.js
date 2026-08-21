@@ -81,7 +81,7 @@ async function obtenerPerfil() {
 
     const { data, error } = await db
       .from('perfiles')
-      .select('id, correo, nombre, rol, activo')
+      .select('id, correo, nombre, rol, activo, area, recibe_solicitudes')
       .eq('id', sesion.user.id)
       .maybeSingle();
 
