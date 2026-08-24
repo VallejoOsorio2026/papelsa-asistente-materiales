@@ -1110,8 +1110,10 @@ a:hover { color: var(--acento-vivo); }
 }
 
 .abrir-reporte::after {
-  content: " ›";
+  content: "›";
   display: inline-block;
+  margin-left: 8px;
+  vertical-align: middle;
   transform: rotate(90deg);
   transition: transform .15s ease;
 }
