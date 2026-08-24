@@ -2,16 +2,12 @@
 // solicitud.js
 // Proyecto: Asistente Inteligente de Materiales SAP - PAPELSA
 // ============================================================
-// Envio de solicitudes por parte de mecanicos y contratistas.
+// Envio de solicitudes por parte de mecanicos y contratistas,
+// y bandeja de quienes las reciben.
 //
 // Ellos no deciden el material desde SAP: lo buscan aqui, lo
 // eligen y lo envian al ingeniero, que sigue siendo quien
 // autoriza (RN-024).
-//
-// El nombre se pide en cada solicitud porque la cuenta puede
-// ser compartida entre varias personas de mantenimiento. Sin
-// eso, el registro diria "mecanico" en todas y se perderia la
-// trazabilidad.
 // ============================================================
 
 // ------------------------------------------------------------
@@ -26,6 +22,9 @@ function esSolicitante() {
 
 // ------------------------------------------------------------
 // pintarFormularioSolicitud()
+// El nombre se pide en cada solicitud porque la cuenta puede
+// ser compartida entre varias personas. Sin eso, el registro
+// diria "mecanico" en todas y se perderia la trazabilidad.
 // ------------------------------------------------------------
 function pintarFormularioSolicitud(solicitud) {
 
@@ -88,14 +87,14 @@ async function enviarSolicitudMateriales(solicitante, orden) {
 
   const materiales = construirFilasSAP(solicitudActual).map(function (f) {
     return {
-      componente:  f[0],
-      denominacion:f[1],
-      cantidad:    f[2],
-      um:          f[3],
-      t:           f[4],
-      s:           f[5],
-      almacen:     f[6],
-      centro:      f[7]
+      componente:   f[0],
+      denominacion: f[1],
+      cantidad:     f[2],
+      um:           f[3],
+      t:            f[4],
+      s:            f[5],
+      almacen:      f[6],
+      centro:       f[7]
     };
   });
 
@@ -125,10 +124,11 @@ async function enviarSolicitudMateriales(solicitante, orden) {
   }
 
   return data;
+}
 
 
 // ============================================================
-// BANDEJA DEL INGENIERO
+// BANDEJA DE QUIEN RECIBE
 // ============================================================
 // Las solicitudes se ven aqui aunque el correo falle o caiga
 // en spam. El correo es el aviso; esta bandeja es el registro.
@@ -198,7 +198,6 @@ function pintarBandeja(filas) {
           + ' <span class="etiqueta-rol">'
           + escapar(s.rol_solicitante) + '</span></p>';
 
-    // Materiales pedidos
     html += '<div class="solicitud-materiales">';
     (s.materiales || []).forEach(function (m) {
       html += '<div class="linea-estado">'
@@ -210,8 +209,8 @@ function pintarBandeja(filas) {
     });
     html += '</div>';
 
-    // El correo puede no haberse enviado todavia
-    if (s.estado_correo === 'pendiente') {
+    if (s.estado_correo === 'pendiente'
+        || s.estado_correo === 'sin_servicio') {
       html += '<p class="ayuda-campo">Aviso por correo pendiente de envío.</p>';
     }
 
