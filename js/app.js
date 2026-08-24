@@ -76,6 +76,7 @@ function conectarBotones() {
       if (abierto) await cargarMetricas();
     });
   }
+
   // Bandeja de solicitudes recibidas
   const cabBandeja = document.getElementById('bandeja-cabecera');
   if (cabBandeja) {
@@ -90,6 +91,7 @@ function conectarBotones() {
       }
     });
   }
+
   // Historial desplegable
   const cabHistorial = document.getElementById('historial-cabecera');
   if (cabHistorial) {
@@ -177,7 +179,7 @@ async function abrirAplicacion(perfil) {
 
   cambiarPantalla('pantalla-app');
 
-    // La bandeja la ven quienes reciben solicitudes de su area
+  // La bandeja la ven quienes reciben solicitudes de su area
   if (typeof recibeSolicitudes === 'function' && recibeSolicitudes()) {
     document.getElementById('panel-bandeja').style.display = 'block';
     cargarBandeja().then(conectarBandeja);
@@ -191,8 +193,9 @@ async function abrirAplicacion(perfil) {
     document.getElementById('panel-carga').style.display = 'block';
     document.getElementById('panel-revertir').style.display = 'block';
   }
+
   actualizarEstado();
-  }
+}
 
 
 // ------------------------------------------------------------
@@ -437,6 +440,7 @@ function refrescarSolicitud() {
     });
     campo.addEventListener('click', function (e) { e.stopPropagation(); });
   });
+
   // Ver mas resultados sin perder los ya mostrados
   destino.querySelectorAll('.ver-mas').forEach(function (boton) {
     boton.addEventListener('click', async function (e) {
@@ -454,9 +458,8 @@ function refrescarSolicitud() {
       refrescarSolicitud();
     });
   });
-    // Aviso de busqueda: disponible siempre, plegado.
-  // El clic no debe propagarse a la cabecera del item, que
-  // tambien es desplegable y cerraria el bloque entero.
+
+  // Aviso de busqueda: disponible siempre, plegado.
   // Se detiene la propagacion hacia la cabecera del item, que
   // tambien es desplegable, pero SIN bloquear los clics de los
   // controles internos.
@@ -476,6 +479,38 @@ function refrescarSolicitud() {
       this.classList.toggle('activo', abierto);
     });
   });
+
+  // Seleccion del motivo del aviso.
+  // Sin este bloque los botones de motivo no responden y
+  // motivosElegidos se queda siempre vacio: el aviso llegaba
+  // sin decir QUE fallo, que es justo el dato que interesa.
+  destino.querySelectorAll('.motivo-busqueda').forEach(function (boton) {
+    boton.addEventListener('click', function (e) {
+      e.stopPropagation();
+
+      const orden = this.dataset.orden;
+
+      // Solo uno activo por item: el aviso de otro item no
+      // debe perder su motivo.
+      destino.querySelectorAll(
+        '.motivo-busqueda[data-orden="' + orden + '"]'
+      ).forEach(function (b) {
+        b.classList.remove('activo');
+      });
+
+      this.classList.add('activo');
+      motivosElegidos[orden] = this.dataset.motivo;
+    });
+  });
+
+  // Volver a marcar el motivo elegido antes de repintar
+  Object.keys(motivosElegidos).forEach(function (orden) {
+    const boton = destino.querySelector(
+      '.motivo-busqueda[data-orden="' + orden + '"]'
+      + '[data-motivo="' + motivosElegidos[orden] + '"]');
+    if (boton) boton.classList.add('activo');
+  });
+
   // Envio del aviso
   destino.querySelectorAll('.reporte-enviar').forEach(function (boton) {
     boton.addEventListener('click', async function (e) {
@@ -508,6 +543,7 @@ function refrescarSolicitud() {
         : '<p class="reporte-ayuda">No se pudo enviar el aviso.</p>';
     });
   });
+
   // Envio de solicitud (mecanico y contratista)
   const botonEnviar = document.getElementById('boton-enviar-solicitud');
   if (botonEnviar) {
@@ -530,6 +566,7 @@ function refrescarSolicitud() {
       });
     });
   }
+
   // Salida para SAP
   const botonSalida = document.getElementById('boton-salida');
   if (botonSalida) {
@@ -780,6 +817,7 @@ function conectarBandeja() {
       zona.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   });
+
   // Copiar el numero de orden: el ingeniero lo necesita en SAP
   // y teclear siete digitos a mano invita a errores.
   document.querySelectorAll('.copiar-orden').forEach(function (boton) {
@@ -795,6 +833,7 @@ function conectarBandeja() {
       }
     });
   });
+
   // Marcar como atendida
   document.querySelectorAll('.bandeja-atender').forEach(function (boton) {
     boton.addEventListener('click', async function (e) {
