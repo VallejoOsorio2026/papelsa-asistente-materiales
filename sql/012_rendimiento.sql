@@ -121,3 +121,171 @@ AS $function$
     where length(c) >= 3
   ) s;
 $function$;
+
+-- ------------------------------------------------------------
+-- buscar_materiales()
+-- El motor. Devuelve candidatos ordenados por puntaje.
+--
+-- PREFILTRO OBLIGATORIO (error 12 del historial): sin el CTE
+-- candidatos_previos con LIMIT 600, comparar palabra a palabra
+-- sobre 65.883 filas agota el tiempo de espera (57014, mas de
+-- 8 segundos). Con prefiltro: 800-2800 ms.
+--
+-- El umbral 0.10 va EXPLICITO con similarity() (error 13): la
+-- instruccion SET pg_trgm.similarity_threshold solo dura la
+-- sesion, y al perderse volvia a 0.3 descartando candidatos
+-- validos ("sinta" nunca llegaba a compararse con "cinta").
+--
+-- RN-016 / ADR-012: la disponibilidad pesa 4 puntos sobre mas
+-- de 100. Reordena candidatos ya validos, nunca eleva un
+-- material incorrecto por tener stock.
+--
+-- RN-030: disponible = libre utilizacion + consignacion.
+-- El stock de proyectos va aparte como comprometido: existe
+-- fisicamente pero esta asignado, y no se oculta.
+--
+-- SECURITY DEFINER con verificacion de sesion en la primera
+-- linea: la funcion consulta el inventario con permisos
+-- elevados, asi que comprueba ella misma quien pregunta.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.buscar_materiales(
+  p_consulta text,
+  p_limite   integer DEFAULT 5
+)
+RETURNS TABLE(
+  material          text,
+  descripcion       text,
+  puntaje           numeric,
+  origen            text,
+  disponible        numeric,
+  comprometido      numeric,
+  unidad            text,
+  centro            text,
+  almacen           text,
+  ubicacion         text,
+  ambito            text,
+  material_antiguo  text
+)
+LANGUAGE plpgsql
+STABLE SECURITY DEFINER
+SET search_path TO 'public', 'extensions'
+AS $function$
+declare
+  v_norm     text;
+  v_exp      text;
+  v_refs     text[];
+  v_medidas  text[];
+  v_palabras text[];
+  v_version  uuid;
+begin
+  if not public.es_usuario_activo() then
+    raise exception 'Se requiere sesion activa.';
+  end if;
+
+  v_version := public.version_datos_activa();
+  if v_version is null then
+    return;
+  end if;
+
+  v_norm := public.normalizar_texto(p_consulta);
+
+  -- Abreviaturas del inventario + jerga de planta
+  v_exp := coalesce(public.expandir_consulta(p_consulta), v_norm);
+
+  v_refs     := public.extraer_referencias(v_exp);
+  v_medidas  := public.extraer_medidas(v_exp);
+  v_palabras := public.extraer_palabras(v_exp);
+
+  return query
+  with candidatos_previos as (
+    select i.*
+    from public.inventario_materiales i
+    where i.version_id = v_version
+      and (
+            lower(i.material) = v_norm
+         or i.material_antiguo_norm = v_norm
+         or similarity(i.texto_normalizado, v_norm) > 0.10
+         or similarity(i.texto_normalizado, v_exp)  > 0.10
+         or exists (select 1 from unnest(v_palabras) w
+                    where i.texto_normalizado like '%' || w || '%')
+         or exists (select 1 from unnest(v_refs) r
+                    where i.texto_normalizado like '%' || r || '%')
+          )
+    limit 600
+  ),
+  base as (
+    select
+      i.material,
+      i.texto_breve_material,
+      i.texto_normalizado,
+      i.material_antiguo,
+      i.material_antiguo_norm,
+      i.unidad_medida_base,
+      i.centro, i.almacen, i.ubicacion, i.ambito_ubicacion,
+
+      coalesce(i.stock_libre_utilizacion,0)
+        + coalesce(i.stock_consignacion,0)          as disponible,
+      coalesce(i.stock_proyectos,0)                 as comprometido,
+
+      similarity(i.texto_normalizado, v_norm)       as sim,
+      public.similitud_palabras(v_exp, i.texto_normalizado) as sim_pal,
+
+      (lower(i.material) = v_norm)                  as cod_exacto,
+      (i.material_antiguo_norm is not null
+       and i.material_antiguo_norm = v_norm)        as cod_antiguo,
+
+      (select count(*) from unnest(v_refs) r
+        where i.texto_normalizado like '%' || r || '%')    as n_refs,
+      (select count(*) from unnest(v_medidas) m
+        where i.texto_normalizado like '%' || m || '%')    as n_medidas,
+      (select count(*) from unnest(v_palabras) w
+        where i.texto_normalizado like '%' || w || '%')    as n_palabras
+
+    from candidatos_previos i
+  ),
+  puntuado as (
+    select b.*,
+      (
+        case when b.cod_exacto  then 100 else 0 end
+      + case when b.cod_antiguo then  90 else 0 end
+      + b.n_refs     * 25
+      + b.n_medidas  * 20
+      + b.n_palabras *  8
+      + b.sim        * 30
+      + b.sim_pal    * 40
+      + case when b.disponible > 0 then 4 else 0 end
+      + case b.ambito_ubicacion
+          when 'molino'  then 2
+          when 'planta'  then 1
+          else 0
+        end
+      )::numeric as total,
+
+      case
+        when b.cod_exacto      then 'codigo'
+        when b.cod_antiguo     then 'codigo antiguo'
+        when b.n_refs > 0      then 'referencia'
+        when b.n_medidas > 0   then 'medida'
+        when b.sim_pal > 0.75  then 'descripcion aproximada'
+        else 'descripcion'
+      end as origen
+    from base b
+  )
+  select
+    p.material,
+    p.texto_breve_material,
+    round(p.total, 2),
+    p.origen,
+    p.disponible,
+    p.comprometido,
+    p.unidad_medida_base,
+    p.centro,
+    p.almacen,
+    p.ubicacion,
+    p.ambito_ubicacion,
+    p.material_antiguo
+  from puntuado p
+  order by p.total desc, p.disponible desc
+  limit p_limite;
+end;
+$function$;
