@@ -87,3 +87,100 @@ begin
   return found;
 end;
 $function$;
+
+-- ------------------------------------------------------------
+-- proponer_jerga()
+-- Cualquier usuario activo propone; nadie aprueba solo. La
+-- fila entra como 'propuesto' y no afecta a la busqueda hasta
+-- que el administrador la valide (RN-025).
+--
+-- on conflict do nothing: proponer dos veces lo mismo no crea
+-- duplicados ni da error. Devuelve null si ya existia.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.proponer_jerga(
+  p_termino    text,
+  p_equivale_a text,
+  p_ambito     text,
+  p_nota       text DEFAULT NULL::text
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+declare
+  v_id uuid;
+begin
+  if not public.es_usuario_activo() then
+    raise exception 'Se requiere sesion activa.';
+  end if;
+
+  insert into public.jerga_planta
+    (termino, equivale_a, ambito, nota, estado, propuesto_por)
+  values (
+    public.normalizar_texto(p_termino),
+    trim(p_equivale_a),
+    public.normalizar_texto(p_ambito),
+    p_nota,
+    'propuesto',
+    auth.uid()
+  )
+  on conflict (termino, equivale_a, ambito) do nothing
+  returning id into v_id;
+
+  return v_id;
+end;
+$function$;
+
+
+-- ------------------------------------------------------------
+-- descubrir_variantes()
+-- Herramienta de administracion, no de busqueda.
+--
+-- Recorre el vocabulario REAL del inventario y encuentra pares
+-- donde una palabra corta es prefijo de una larga: mang/
+-- manguera, torn/tornillo, rod/rodamiento. Es como se armo el
+-- diccionario de abreviaturas, en vez de inventarlas.
+--
+-- Solo propone candidatos: quien decide sigue siendo el
+-- administrador (RN-025). Descarta palabras con cifras, que
+-- son referencias y no abreviaturas.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.descubrir_variantes(
+  p_min_frecuencia integer DEFAULT 20
+)
+RETURNS TABLE(
+  palabra_larga text,
+  palabra_corta text,
+  frec_larga    bigint,
+  frec_corta    bigint,
+  parecido      real
+)
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public', 'extensions'
+AS $function$
+  with vocabulario as (
+    select w as palabra, count(*) as frec
+    from public.inventario_materiales i,
+         unnest(string_to_array(i.texto_normalizado, ' ')) as w
+    where i.version_id = public.version_datos_activa()
+      and length(w) >= 3
+      and w !~ '[0-9]'
+    group by w
+    having count(*) >= p_min_frecuencia
+  )
+  select
+    a.palabra,
+    b.palabra,
+    a.frec,
+    b.frec,
+    public.parecido_palabra(a.palabra, b.palabra)
+  from vocabulario a
+  join vocabulario b
+    on length(b.palabra) < length(a.palabra)
+   and a.palabra like b.palabra || '%'      -- b es prefijo de a
+   and length(b.palabra) >= 3
+  where public.parecido_palabra(a.palabra, b.palabra) >= 0.70
+  order by b.frec desc, a.frec desc;
+$function$;
