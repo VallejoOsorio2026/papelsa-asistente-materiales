@@ -8,13 +8,121 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 - **MENOR** — funcionalidad nueva compatible con lo anterior
 - **PARCHE** — corrección de errores o ajustes menores
 
----
-
 ## [No publicado]
 
 ### En construcción
 - Banco de pruebas y medición objetiva del motor
 - Pantalla de administración de sinónimos sugeridos
+- Servicio de correo real: pendiente de dominio propio
+- Tarea programada de reintento de avisos con `pg_cron`
+
+---
+
+## [v1.1.0] — 2026-08-24
+
+El alcance se amplió más rápido de lo previsto. El piloto había sido
+concebido para ingenieros; la dirección decidió abrirlo a mecánicos y
+contratistas, y se incorporó el área de almacén. El asistente deja de
+ser una herramienta de consulta para convertirse también en un canal de
+solicitud.
+
+### Añadido
+
+**Escalado a mecánicos, contratistas y almacén**
+- Seis roles (`admin`, `ingeniero`, `mecanico`, `contratista`,
+  `jefe_almacen`, `almacenista`) y dos áreas (`mantenimiento`, `almacen`)
+- Envío de solicitudes de materiales: el mecánico busca, elige y envía al
+  ingeniero, que sigue siendo quien decide y quien lleva la información a
+  SAP (RN-024, RN-028)
+- Validación de orden de trabajo de siete dígitos, en el navegador **y**
+  en la base de datos
+- El nombre se pide en cada solicitud aunque haya sesión iniciada: la
+  cuenta puede compartirse entre varias personas y, sin ese campo, el
+  registro diría «mecánico» en todas
+- **Bandeja de solicitudes recibidas** para quienes tienen
+  `recibe_solicitudes`, con copia del número de orden en un clic y marcado
+  de atendida
+- Generación de Excel en el navegador, sin librerías externas
+- Edge Function `enviar-correo` desplegada, con el contenido del mensaje
+  armado en la base de datos
+
+**Motor de búsqueda**
+- **Jerga de planta** atada a ámbito: «disco pulidora pequeño» encuentra
+  los discos de 4 1/2". La equivalencia solo se aplica si el término y su
+  ámbito aparecen juntos en la consulta
+- Descubrimiento automático de variantes sobre el vocabulario real del
+  inventario, para proponer abreviaturas al administrador
+- **Ver más resultados** (5 → 10 → 15), con registro de cada ampliación
+
+**Trazabilidad**
+- Registro de **todas** las búsquedas, no solo las de confianza baja
+- Aviso «¿No es esto lo que buscabas?» siempre disponible y plegado, con
+  cinco motivos concretos derivados de fallos observados
+- Panel de métricas del piloto restringido al administrador
+
+### Reglas de negocio
+- **RN-027 — CORREGIDA.** La salida para SAP tiene **ocho** columnas, no
+  nueve. La columna `TE` aparece en la pantalla de SAP pero no admite valor
+  al pegar: incluirla desplazaba todos los datos una posición a la derecha
+- **RN-030 — NUEVA.** Disponible = libre utilización + consignación.
+  El stock de proyectos se presenta aparte como comprometido: existe
+  físicamente pero está asignado. No se oculta ni se suma. En una parada de
+  madrugada, saber que un material existe aunque esté comprometido puede
+  ser justo la información que se necesita
+- **RN-031 — NUEVA.** Conversión numérica según unidad de medida
+- **RN-032 — NUEVA.** Código de almacén desconocido se clasifica como «otra
+  ubicación», nunca oculta el material
+
+### Decisiones adoptadas
+- **ADR-019** — Cada área tiene sus propios destinatarios. Una solicitud de
+  mantenimiento no llega al almacén aunque su jefe tenga
+  `recibe_solicitudes`. Añadir un departamento nuevo es un `INSERT`, no un
+  rediseño
+- **ADR-020** — Marcar una solicitud como atendida la retira de la bandeja
+  de **todos** los destinatarios del área, no solo de quien pulsó. Si ya la
+  atendió un ingeniero, el otro no debe volver a atenderla
+- **ADR-021** — El contenido del correo se arma en la base de datos, no en
+  la Edge Function: corregir el texto no exige volver a desplegar nada
+- **ADR-022** — El aviso por correo se envía en el momento, no esperando a
+  una tarea programada. Un mecánico de madrugada no puede esperar a que una
+  cola se revise. Si falla, la solicitud queda encolada y se reintenta
+
+### Corregido
+- **Fracciones mixtas.** De «4 1/2» solo sobrevivía «1/2», porque el «4» se
+  descartaba por corto. Un disco de 4 1/2" y uno de 1/2" no tienen relación.
+  Ahora se detectan sobre el texto completo, antes de partirlo en palabras
+- **Orden de expansión.** La jerga se aplicaba antes que los sinónimos y
+  partía las medidas, con lo que dejaba de servir justo para el caso que la
+  motivó. Ahora va al final
+- **Fallo de seguridad en las métricas (grave).** El panel era consultable
+  por cualquier usuario autenticado; ocultarlo en pantalla no protegía nada.
+  Y el primer `REVOKE` no bastó: en PostgreSQL toda función nueva concede
+  ejecución a `PUBLIC` por defecto. La protección real es la verificación de
+  rol dentro de la propia función
+- **Lectura de perfil.** No filtraba por usuario ni leía el área, de modo que
+  la bandeja no aparecía a los ingenieros destinatarios
+- **CORS de la Edge Function.** Faltaba `x-client-info` entre las cabeceras
+  permitidas: la librería de Supabase la envía siempre. Y «Verify JWT» debe
+  quedar desactivado, o la petición previa se bloquea antes de llegar al código
+- **Botones de motivo del aviso** sin conectar: el aviso llegaba sin decir
+  qué había fallado, que es justo el dato que interesa
+- **Función `registrar_feedback` duplicada.** Convivían dos versiones con
+  distinto número de parámetros; se eliminó la obsoleta
+
+### Documentación
+- Los guiones SQL que solo existían en la base quedan versionados: catorce
+  archivos nuevos o actualizados. Si el proyecto de base de datos se perdiera,
+  esa parte era la única no reproducible
+- `sql/README.md` con el orden real de ejecución, que no coincide con la
+  numeración de los archivos
+
+### Conocido
+- `correos_pendientes()` solo recoge los avisos en estado `pendiente`, no los
+  marcados `sin_servicio`. Las solicitudes registradas antes de configurar el
+  correo quedarían fuera de la cola de reintento. Severidad: media, sin efecto
+  hasta que exista el dominio
+- `marcar_solicitud()` no comprueba sesión activa dentro de la función y
+  depende por completo de las políticas de seguridad. Severidad: media
 
 ---
 
