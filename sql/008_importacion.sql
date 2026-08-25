@@ -215,3 +215,189 @@ begin
     'mensaje', 'Se restauro la version anterior del inventario.');
 end;
 $function$;
+
+
+-- ------------------------------------------------------------
+-- convertir_numero()
+-- RN-031: el archivo trae los numeros como TEXTO con formato
+-- mixto (3.514.207,24 / 124 / 12.192). Si hay coma, el punto
+-- es separador de miles.
+--
+-- El redondeo por unidad no es cosmetico: resuelve los valores
+-- donde el punto era interpretable de dos formas. "12.192"
+-- puede ser doce mil ciento noventa y dos, o doce coma ciento
+-- noventa y dos. Si la unidad es de conteo, la respuesta es
+-- clara: no existen 8,2 guantes.
+--
+-- Para unidades continuas (KG, MT, LT, M) se conservan los
+-- decimales.
+--
+-- exception when others: una celda ilegible devuelve null y no
+-- tumba la carga entera de 65.883 filas.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.convertir_numero(
+  p_texto  text,
+  p_unidad text DEFAULT NULL::text
+)
+RETURNS numeric
+LANGUAGE plpgsql
+IMMUTABLE
+AS $function$
+declare
+  v        text := trim(coalesce(p_texto, ''));
+  v_valor  numeric;
+  v_unidad text := upper(trim(coalesce(p_unidad, '')));
+begin
+  if v = '' then
+    return null;
+  end if;
+
+  -- Formato europeo: punto de miles + coma decimal
+  if position(',' in v) > 0 then
+    v := replace(v, '.', '');
+    v := replace(v, ',', '.');
+  end if;
+
+  v_valor := v::numeric;
+
+  -- RN-031: unidades de conteo -> entero.
+  -- No existen 8,2 guantes. Esto resuelve tambien los valores
+  -- donde el punto era interpretable de dos formas.
+  if v_unidad in ('UND','UN','PZA','PZ','EA','ST','C/U','UNI') then
+    return round(v_valor);
+  end if;
+
+  return v_valor;
+
+exception when others then
+  return null;
+end;
+$function$;
+
+
+-- ------------------------------------------------------------
+-- limpiar_material_antiguo()
+-- Seis codigos antiguos llegaron convertidos en fecha por
+-- Excel y son irrecuperables.
+--
+-- Se descartan en lugar de conservarlos: un codigo falso es
+-- peor que un campo vacio, porque el ingeniero podria buscarlo
+-- en SAP y perder tiempo con un dato inventado.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.limpiar_material_antiguo(p_texto text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+AS $function$
+  select case
+    when coalesce(p_texto,'') = '' then null
+    when p_texto like '%00:00:00%' then null   -- corrupcion de origen
+    else trim(p_texto)
+  end;
+$function$;
+
+
+-- ------------------------------------------------------------
+-- cargar_lote_inventario()
+-- Inserta un lote de filas (500 por defecto, ADR-005). No se
+-- hacen 65.883 peticiones individuales: seria inviable desde
+-- un navegador.
+--
+-- Solo admite cargas en estado 'preparando': impide inyectar
+-- filas en la version activa, que es inmutable (RN-011,
+-- ADR-006).
+--
+-- Las columnas normalizadas se calculan AQUI, en el momento de
+-- insertar. El dato SAP original queda intacto al lado.
+--
+-- RN-033: la clave es (version, material, centro, almacen). Un
+-- material aparece en varias filas, una por ubicacion. Con la
+-- clave anterior — solo material — la carga completa se
+-- quedaba en 46.212 de 65.883 filas.
+--
+-- Se cargan 21 columnas, no 28 (ADR-005): se excluyen precios,
+-- consumos y valores para reducir la sensibilidad de la
+-- informacion alojada fuera de la organizacion.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.cargar_lote_inventario(
+  p_version_id uuid,
+  p_filas      jsonb
+)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+declare
+  v_insertadas integer;
+  v_estado     text;
+begin
+  if not public.es_admin() then
+    raise exception 'Solo el administrador puede cargar inventario.';
+  end if;
+
+  select estado into v_estado
+  from public.versiones_datos
+  where id = p_version_id;
+
+  if v_estado is null then
+    raise exception 'La version indicada no existe.';
+  end if;
+
+  if v_estado <> 'preparando' then
+    raise exception 'Solo se admiten cargas en versiones en preparacion.';
+  end if;
+
+  insert into public.inventario_materiales (
+    version_id,
+    material, texto_breve_material,
+    stock_libre_utilizacion, stock_consignacion, stock_proyectos,
+    xcentro, maximo, minimo,
+    centro, almacen, ubicacion, unidad_medida_base,
+    planif_necesidades, grupo_compra, tipo_material, grupo_articulo,
+    clase_valoracion, cat_val_stock_proyecto,
+    caract_planif_nec, tam_lote_planif_nec, material_antiguo,
+    texto_normalizado, material_antiguo_norm, ambito_ubicacion
+  )
+  select
+    p_version_id,
+    trim(f->>'material'),
+    trim(f->>'texto_breve_material'),
+    public.convertir_numero(f->>'stock_libre_utilizacion', f->>'unidad_medida_base'),
+    public.convertir_numero(f->>'stock_consignacion',      f->>'unidad_medida_base'),
+    public.convertir_numero(f->>'stock_proyectos',         f->>'unidad_medida_base'),
+    public.convertir_numero(f->>'xcentro'),
+    public.convertir_numero(f->>'maximo', f->>'unidad_medida_base'),
+    public.convertir_numero(f->>'minimo', f->>'unidad_medida_base'),
+    trim(f->>'centro'),
+    trim(f->>'almacen'),
+    nullif(trim(coalesce(f->>'ubicacion','')), ''),
+    trim(f->>'unidad_medida_base'),
+    nullif(trim(coalesce(f->>'planif_necesidades','')), ''),
+    nullif(trim(coalesce(f->>'grupo_compra','')), ''),
+    nullif(trim(coalesce(f->>'tipo_material','')), ''),
+    nullif(trim(coalesce(f->>'grupo_articulo','')), ''),
+    nullif(trim(coalesce(f->>'clase_valoracion','')), ''),
+    nullif(trim(coalesce(f->>'cat_val_stock_proyecto','')), ''),
+    nullif(trim(coalesce(f->>'caract_planif_nec','')), ''),
+    nullif(trim(coalesce(f->>'tam_lote_planif_nec','')), ''),
+    public.limpiar_material_antiguo(f->>'material_antiguo'),
+
+    public.normalizar_texto(f->>'texto_breve_material'),
+    public.normalizar_texto(public.limpiar_material_antiguo(f->>'material_antiguo')),
+    public.clasificar_ubicacion(f->>'centro', f->>'almacen')
+
+  from jsonb_array_elements(p_filas) as f
+  -- RN-033: la clave incluye centro y almacen
+  on conflict (version_id, material, centro, almacen) do nothing;
+
+  get diagnostics v_insertadas = row_count;
+
+  update public.versiones_datos
+     set filas_cargadas = filas_cargadas + v_insertadas
+   where id = p_version_id;
+
+  return v_insertadas;
+end;
+$function$;
+
