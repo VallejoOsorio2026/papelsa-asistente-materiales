@@ -2,93 +2,104 @@
 -- 014_sinonimos.sql
 -- Proyecto: Asistente Inteligente de Materiales SAP - PAPELSA
 -- ============================================================
--- Capa 4 de ADR-011: diccionario de abreviaturas.
+-- Capa 4 de ADR-011: abreviaturas reales del inventario.
+-- No se inventaron; se descubrieron recorriendo el vocabulario
+-- con descubrir_variantes() (ver 020_jerga.sql).
 --
--- Las descripciones de SAP estan abreviadas (TORN, VVA, ROD)
--- mientras que el ingeniero escribe la palabra completa. Ningun
--- algoritmo de similitud resuelve esto: no son errores de
--- escritura, son abreviaturas.
+-- ⚠️ ARCHIVO ACTUALIZADO 24-08-2026. La version anterior
+-- versionada estaba incompleta.
 --
--- Construido a partir del vocabulario real del inventario:
--- las 300 palabras mas frecuentes en 65.883 filas.
---
--- RN-025: todo lo que entra aqui como global_validado es una
--- regla aprobada, no un patron observado.
---
--- Este archivo se AMPLIA cuando se confirmen nuevas
--- equivalencias. No se crean archivos nuevos.
+-- Diccionario actual: 49+ equivalencias confirmadas
+-- (torn=tornillo, rod=rodamiento, vva=valvula, mang=manguera,
+-- bba=bomba, bcc=bristol con cabeza...). Solo entran las de
+-- ambito 'global_validado': lo observado no se convierte solo
+-- en regla (RN-025).
 -- ============================================================
 
-insert into public.sinonimos (termino, equivalente, ambito) values
 
--- ---------- Tipos de material ----------
-('tornillo',      'torn',    'global_validado'),
-('rodamiento',    'rod',     'global_validado'),
-('valvula',       'vva',     'global_validado'),
-('manguera',      'mang',    'global_validado'),
-('soldadura',     'sold',    'global_validado'),
-('soldar',        'sold',    'global_validado'),
-('bomba',         'bba',     'global_validado'),
-('tarjeta',       'tarj',    'global_validado'),
-('interruptor',   'int',     'global_validado'),
-('impulsor',      'imp',     'global_validado'),
-('motorreductor', 'motored', 'global_validado'),
-('motoreductor',  'motored', 'global_validado'),
-
--- ---------- Caracteristicas ----------
-('neumatico',   'neu',    'global_validado'),
-('hidraulico',  'hid',    'global_validado'),
-('transmision', 'transm', 'global_validado'),
-('galvanizado', 'galv',   'global_validado'),
-('trifasico',   'trif',   'global_validado'),
-('sencillo',    'senc',   'global_validado'),
-('sencilla',    'senc',   'global_validado'),
-('superior',    'sup',    'global_validado'),
-('inferior',    'inf',    'global_validado'),
-('posicion',    'pos',    'global_validado'),
-('reparacion',  'reparac','global_validado'),
-('referencia',  'ref',    'global_validado'),
-('calibre',     'cal',    'global_validado'),
-('roscado',     'rsc',    'global_validado'),
-('rosca',       'rsc',    'global_validado'),
-('cuadrado',    'cuad',   'global_validado'),
-('cuadrada',    'cuad',   'global_validado'),
-('solenoide',   'soln',   'global_validado'),
-
--- ---------- Tipos de tornilleria ----------
--- BCC: bristol con cabeza · BSC: bristol sin cabeza
-('bristol con cabeza', 'bcc', 'global_validado'),
-('bristol sin cabeza', 'bsc', 'global_validado'),
-
--- ---------- Piezas ----------
-('acople', 'manzana', 'global_validado'),
-('anillo', 'ring',    'global_validado'),
-('sello',  'seal',    'global_validado'),
-('buje',   'bushing', 'global_validado'),
-('brida',  'flange',  'global_validado'),
-('brida',  'flanch',  'global_validado'),
-('pasador','pin',     'global_validado'),
-('juego',  'kit',     'global_validado'),
-('juego',  'set',     'global_validado'),
-
--- ---------- Marcas ----------
-('telemecanique', 'telem',   'global_validado'),
-('siemens',       'siem',    'global_validado'),
-('riel mecano',   'mecano',  'global_validado'),
-
--- ---------- Unidades y normas ----------
-('revoluciones por minuto', 'rpm', 'global_validado'),
-('voltaje continuo',        'vdc', 'global_validado'),
-('amperios',                'amp', 'global_validado'),
-('tonelada',                'ton', 'global_validado'),
-('toneladas',               'ton', 'global_validado')
-
-on conflict (termino, equivalente, ambito) do nothing;
+-- ------------------------------------------------------------
+-- expandir_sinonimos()
+--
+-- EXPANSION BIDIRECCIONAL: quien escribe "vva" debe encontrar
+-- "valvula", y quien escribe "valvula" debe encontrar las
+-- filas que dicen "vva". De ahi los dos union: uno busca por
+-- termino y otro por equivalente.
+--
+-- Las palabras originales se conservan siempre: expandir anade
+-- posibilidades, nunca sustituye lo que el ingeniero escribio
+-- (RN-002).
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.expandir_sinonimos(p_consulta text)
+RETURNS text
+LANGUAGE sql
+STABLE
+SET search_path TO 'public', 'extensions'
+AS $function$
+  with palabras as (
+    select unnest(string_to_array(public.normalizar_texto(p_consulta), ' ')) as p
+  ),
+  expandido as (
+    select p as termino from palabras
+    union
+    select s.equivalente
+      from palabras pa
+      join public.sinonimos s
+        on public.normalizar_texto(s.termino) = pa.p
+     where s.ambito = 'global_validado'
+    union
+    select public.normalizar_texto(s.termino)
+      from palabras pa
+      join public.sinonimos s
+        on public.normalizar_texto(s.equivalente) = pa.p
+     where s.ambito = 'global_validado'
+  )
+  select string_agg(termino, ' ')
+  from expandido
+  where termino is not null and termino <> '';
+$function$;
 
 
--- ============================================================
--- VERIFICACION
--- ============================================================
-select ambito, count(*) as cantidad
-from public.sinonimos
-group by ambito;
+-- ------------------------------------------------------------
+-- expandir_consulta()
+-- Encadena las dos capas y es lo que llama buscar_materiales.
+--
+-- EL ORDEN IMPORTA (error 18 del historial): primero los
+-- sinonimos, la jerga AL FINAL.
+--
+-- Aplicar la jerga antes partia las medidas: expandir_sinonimos
+-- trocea el texto en palabras, y de "4 1/2" quedaban "4" y
+-- "1/2" sueltos, con lo que la equivalencia dejaba de servir
+-- justo para el caso que la motivo (disco pulidora pequeno).
+--
+-- Aqui la jerga se anade entera al final, sin pasar por el
+-- troceado.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.expandir_consulta(p_consulta text)
+RETURNS text
+LANGUAGE sql
+STABLE
+SET search_path TO 'public', 'extensions'
+AS $function$
+  with base as (
+    select coalesce(
+      public.expandir_sinonimos(p_consulta),
+      public.normalizar_texto(p_consulta)
+    ) as texto
+  ),
+  jerga as (
+    select string_agg(distinct j.equivale_a, ' ') as equivalencias
+    from public.jerga_planta j
+    where j.estado = 'validado'
+      and public.normalizar_texto(p_consulta)
+          ~ ('(^|\s)' || j.termino || '($|\s)')
+      and exists (
+        select 1
+        from unnest(string_to_array(j.ambito, ' ')) as palabra
+        where public.normalizar_texto(p_consulta) like '%' || palabra || '%'
+      )
+  )
+  select trim(
+    (select texto from base) || ' ' ||
+    coalesce((select equivalencias from jerga), '')
+  );
+$function$;
