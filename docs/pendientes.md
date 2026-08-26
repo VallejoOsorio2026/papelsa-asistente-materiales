@@ -5,13 +5,14 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | ID | Descripción | Estado | Se resuelve en |
 |---|---|---|---|
 | PENDIENTE-002 | Almacén físico del Corrugador. La muestra de 500 filas respalda el valor asumido: 124 filas cruzan ese centro con ese almacén, sin excepciones. Falta confirmación formal antes de darlo por validado. | Abierto · con evidencia | Confirmación del responsable |
-| PENDIENTE-006 | Variantes fonéticas de palabras extranjeras. Las consultas `craf` y `carft` devuelven ruido en las primeras posiciones (curva, cuchilla, carriage). El material correcto aparece, pero no encabeza. Causa probable: el algoritmo fonético colapsa consonantes distintas. La consulta `kra` sí funciona correctamente. | Abierto | Fase 14, capa de sinónimos |
+| PENDIENTE-006 | Variantes fonéticas de palabras extranjeras. **Medido el 2026-08-26 con el banco de pruebas:** `carft` ya funciona y encabeza correctamente con Cartulina Kraft; se convirtió en caso de control. Solo falla `craf`, y es peor de lo documentado: no aparece ni entre los 20 primeros, encabeza un sello mecánico sin relación. Contraste útil: `kra` y `carft` aciertan en el puesto 1 con la misma raíz. Causa probable: el algoritmo fonético colapsa consonantes distintas. |
 | PENDIENTE-008 | Validación del pegado en SAP real. El bloque de ocho columnas separadas por tabulador (sin la columna TE, corregido el 2026-08-24) se verificó en Excel y las columnas caen correctamente. Falta comprobarlo en la pantalla de SAP. | Abierto | Cuando haya acceso a SAP |
-| PENDIENTE-009 | El sustantivo principal no pesa más que los calificativos. En «disco pulidora pequeño», una guarda para pulidora de 4-1/2" encabeza sobre los discos de 4-1/2", porque contiene las mismas palabras. Idea a evaluar: dar más peso cuando la palabra coincide al inicio de la descripción del material (`DISCO PULIR...` frente a `GUARDA PARA PULIDORA...`), en lugar de intentar identificar cuál es el sustantivo. **No se implementa sin medición**: el ajuste podría mejorar este caso y empeorar otros. | Abierto | Banco de pruebas |
+| PENDIENTE-009 | El sustantivo principal no pesa más que los calificativos. **Medido el 2026-08-26:** el disco correcto está en posición 2, no perdido. La guarda para pulidora le gana por poco porque contiene las mismas palabras. Menos grave de lo que se creía, pero sigue siendo un fallo: el ingeniero ve primero lo que no busca. Idea a evaluar: dar más peso cuando la palabra coincide al inicio de la descripción. **No se implementa sin medir todo el banco**: podría mejorar este caso y empeorar otros. | Abierto | Banco de pruebas |
 | PENDIENTE-012 | Confirmar con el autorizante el alcance ampliado. PENDIENTE-003 se autorizó para un piloto con ingenieros. Contratistas externos con acceso al catálogo de repuestos y existencias es un alcance distinto y conviene ratificarlo antes de dar acceso a personal externo. | Abierto | Confirmación del responsable |
 | PENDIENTE-013 | Verificar la equivalencia «aisi = varilla roscada» antes de integrarla al diccionario. AISI es un instituto de normas de acero (AISI 304, AISI 1045), no un tipo de pieza. Integrarla sin comprobar contaminaría la búsqueda de aceros. | Abierto | Confirmación del responsable |
 | PENDIENTE-014 | Las cuentas `Mecánicos Molino` y `FAISMON` siguen en el área `pruebas`: sus solicitudes solo llegan a la cuenta de ensayo. Pasarlas a `mantenimiento` las pone en producción y los avisos empezarán a llegar a Sierra, Zapata y Gómez. Antes conviene resolver PENDIENTE-012 y avisar a los tres ingenieros, o el primer correo de un dominio desconocido acabará en spam por decisión suya. | Abierto | Decisión del responsable |
 | PENDIENTE-015 | El dominio `elsa-ai.link` está registrado a título personal y es hoy una dependencia del sistema: si caduca, los avisos dejan de enviarse sin aviso previo. Anotar la fecha de renovación y decidir si el proyecto crece hacia un dominio institucional. | Abierto | Renovación anual |
+| PENDIENTE-016 | La abreviatura `AC` se pierde por longitud. `extraer_palabras()` descarta lo de menos de tres letras, así que en «AC Rsc» la búsqueda efectiva es solo `rsc` y el material correcto cae al puesto 7. La expansión de sinónimos añade `acero`, que no coincide porque el inventario escribe `AC`. **No corregir bajando el mínimo a dos letras sin medir**: metería `de`, `mm`, `un` y decenas de fragmentos en todas las búsquedas del catálogo. Alternativa a evaluar: permitir palabras de dos letras solo si están en el diccionario de abreviaturas. | Abierto | Banco de pruebas |
 
 ## Cerrados
 
@@ -65,9 +66,9 @@ No implementar si ponen en riesgo el piloto.
     cubrir jerga local y variantes que ningún algoritmo puede deducir solo
 15. Rediseño del frontend. Entre otros ajustes: hacer más notable la
     advertencia de material marcado para baja, hoy demasiado sutil
-16. La coincidencia exacta por código debería ganar siempre. Al buscar
-    un código, el prefiltro por similitud puede colar otros materiales
-    por encima del exacto
+16. ~~La coincidencia exacta por código debería ganar siempre.~~
+    **Resuelto.** Medido el 2026-08-26: al buscar `5824421` el código
+    exacto encabeza. Se conserva como caso de control en el banco
 17. Revisar el modelo de sesión si el sistema escala a terminales
     compartidos en planta. Hoy la sesión persiste por navegador y se
     comparte entre pestañas, decisión tomada para no añadir fricción al
