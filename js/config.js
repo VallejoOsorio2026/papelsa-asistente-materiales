@@ -23,6 +23,6 @@ const CONFIG = {
 
   // Version logica de la aplicacion. Se registra en cada
   // solicitud para saber que codigo produjo cada respuesta.
-  VERSION_SISTEMA: 'v1.1.0'
+  VERSION_SISTEMA: 'v1.2.0'
 
 };
