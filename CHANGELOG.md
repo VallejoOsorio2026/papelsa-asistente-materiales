@@ -13,8 +13,62 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ### En construcción
 - Banco de pruebas y medición objetiva del motor
 - Pantalla de administración de sinónimos sugeridos
-- Servicio de correo real: pendiente de dominio propio
-- Tarea programada de reintento de avisos con `pg_cron`
+
+---
+
+## [v1.2.0] — 2026-08-26
+
+El aviso por correo pasa a funcionar de verdad. Hasta ahora la solicitud
+quedaba registrada y visible en la bandeja, pero nadie recibía nada: si el
+ingeniero no abría la aplicación, no se enteraba.
+
+### Añadido
+- **Correo real.** Dominio propio `elsa-ai.link` verificado en Resend, con
+  firma DKIM y SPF. Los avisos llegan a las direcciones corporativas
+- **Tarea de reintento** cada 10 minutos con `pg_cron` y `pg_net`. Recoge
+  los avisos que fallaron en el momento del envío, con tope de tres intentos
+- **Cuentas de solicitante compartidas.** El personal de planta no tiene
+  correo corporativo, así que se crean cuentas por grupo o empresa
+  (`Mecánicos Molino`, `FAISMON`). La trazabilidad se sostiene porque el
+  formulario exige el nombre completo en cada envío, tal como se previó
+- **Estructura por áreas ampliada** de dos a cinco: `mantenimiento`,
+  `almacen`, `electrico`, `proyectos` y `pruebas`. Confirmó ADR-019: añadir
+  un área fue un `INSERT`, no un rediseño
+
+### Corregido
+- **PENDIENTE-010.** La cola de reintento solo miraba el estado `pendiente`,
+  pero las solicitudes registradas sin servicio de correo quedan en
+  `sin_servicio`. Todas las del piloto habrían quedado fuera de la cola para
+  siempre. Se corrigió antes de configurar el correo, no después
+
+### Método
+El circuito se validó **antes** de comprar el dominio, usando la dirección de
+pruebas de Resend contra la cuenta personal del administrador. Comprobar
+primero que la Edge Function, los secretos y la cola funcionaban permitió que
+el dominio fuera un trámite y no un salto a ciegas: si algo hubiera fallado
+después, no se sabría si la causa era el DNS o el código.
+
+Las solicitudes de prueba se borraron antes de activar el envío. De no
+hacerlo, el día que el correo empezara a funcionar habrían salido de golpe
+varias órdenes inventadas hacia los ingenieros.
+
+### Decisiones adoptadas
+- **ADR-023** — Una cuenta por empresa contratista, no una cuenta genérica
+  de «contratistas». Permite saber qué empresa hizo cada solicitud, y la
+  estructura `empresa.area@` escala sin rediseño
+- **ADR-024** — La solicitud va siempre al área del perfil de quien la envía.
+  Un material eléctrico pedido por un mecánico llega a mantenimiento y se
+  deriva a mano. Se prefiere eso a obligar al mecánico a clasificar el
+  material antes de buscarlo
+
+### Conocido
+- Las cuentas compartidas no tienen recuperación de contraseña: sus
+  direcciones no existen. Las restablece el administrador
+- El dominio está registrado a título personal y es hoy una dependencia del
+  sistema. Si caduca, los avisos dejan de enviarse sin previo aviso
+  (PENDIENTE-015)
+- Las cuentas de solicitante siguen en el área `pruebas`. Pasarlas a
+  producción es una decisión pendiente (PENDIENTE-014)
 
 ---
 
