@@ -8,10 +8,12 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | PENDIENTE-006 | Variantes fonéticas de palabras extranjeras. Las consultas `craf` y `carft` devuelven ruido en las primeras posiciones (curva, cuchilla, carriage). El material correcto aparece, pero no encabeza. Causa probable: el algoritmo fonético colapsa consonantes distintas. La consulta `kra` sí funciona correctamente. | Abierto | Fase 14, capa de sinónimos |
 | PENDIENTE-008 | Validación del pegado en SAP real. El bloque de ocho columnas separadas por tabulador (sin la columna TE, corregido el 2026-08-24) se verificó en Excel y las columnas caen correctamente. Falta comprobarlo en la pantalla de SAP. | Abierto | Cuando haya acceso a SAP |
 | PENDIENTE-009 | El sustantivo principal no pesa más que los calificativos. En «disco pulidora pequeño», una guarda para pulidora de 4-1/2" encabeza sobre los discos de 4-1/2", porque contiene las mismas palabras. Idea a evaluar: dar más peso cuando la palabra coincide al inicio de la descripción del material (`DISCO PULIR...` frente a `GUARDA PARA PULIDORA...`), en lugar de intentar identificar cuál es el sustantivo. **No se implementa sin medición**: el ajuste podría mejorar este caso y empeorar otros. | Abierto | Banco de pruebas |
-| PENDIENTE-010 | `correos_pendientes()` solo recoge los avisos en estado `pendiente`, pero cuando el servicio de correo no está configurado el estado queda en `sin_servicio`. Consecuencia: todas las solicitudes registradas durante el piloto quedarían fuera de la cola de reintento y no se enviarían al configurar el dominio. Solo afectaría a las ya existentes; las nuevas irían bien. | Abierto | Al configurar el correo real |
 | PENDIENTE-011 | `marcar_solicitud()` es la única función `SECURITY DEFINER` del proyecto sin `es_usuario_activo()` al inicio. Se ejecuta con permisos elevados y depende por completo de las políticas de seguridad de la tabla. Severidad media. | Abierto | Próxima revisión de seguridad |
 | PENDIENTE-012 | Confirmar con el autorizante el alcance ampliado. PENDIENTE-003 se autorizó para un piloto con ingenieros. Contratistas externos con acceso al catálogo de repuestos y existencias es un alcance distinto y conviene ratificarlo antes de dar acceso a personal externo. | Abierto | Confirmación del responsable |
 | PENDIENTE-013 | Verificar la equivalencia «aisi = varilla roscada» antes de integrarla al diccionario. AISI es un instituto de normas de acero (AISI 304, AISI 1045), no un tipo de pieza. Integrarla sin comprobar contaminaría la búsqueda de aceros. | Abierto | Confirmación del responsable |
+| PENDIENTE-014 | Las cuentas `Mecánicos Molino` y `FAISMON` siguen en el área `pruebas`: sus solicitudes solo llegan a la cuenta de ensayo. Pasarlas a `mantenimiento` las pone en producción y los avisos empezarán a llegar a Sierra, Zapata y Gómez. Antes conviene resolver PENDIENTE-012 y avisar a los tres ingenieros, o el primer correo de un dominio desconocido acabará en spam por decisión suya. | Abierto | Decisión del responsable |
+| PENDIENTE-015 | El dominio `elsa-ai.link` está registrado a título personal y es hoy una dependencia del sistema: si caduca, los avisos dejan de enviarse sin aviso previo. Anotar la fecha de renovación y decidir si el proyecto crece hacia un dominio institucional. | Abierto | Renovación anual |
+
 ## Cerrados
 
 | ID | Descripción | Cerrado el | Resolución |
@@ -21,6 +23,7 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | PENDIENTE-004 | Formato numérico mixto en el archivo de origen | 2026-08-12 | Resuelto mediante la unidad de medida. Si es de conteo, el valor se redondea a entero; si es continua, se conservan los decimales (RN-031). Los valores ambiguos desaparecen porque corresponden a artículos contables |
 | PENDIENTE-005 | Códigos de almacén no documentados | 2026-08-12 | **No eran excepciones.** `P122`, `P123`, `P212`, `P213` son almacenes normales de cada centro. Apenas aparecían en la muestra de 500 filas |
 | PENDIENTE-007 | Rendimiento con el inventario completo | 2026-08-12 | Resuelto con un prefiltro por índice trigram antes de aplicar la comparación costosa. De 8.520 ms a 864 ms |
+| PENDIENTE-010 | La cola de reintento ignoraba el estado `sin_servicio` | 2026-08-26 | Resuelto. `correos_pendientes()` incluye ahora ambos estados. Se borraron además las solicitudes de prueba, para que no salieran todas de golpe al activar el correo |
 
 ## Incidencias conocidas
 
@@ -35,6 +38,7 @@ Registradas, sin acción prevista por ahora.
 | `clasificar_ubicacion()` recibe el parámetro `p_almacen` y no lo usa: clasifica solo por centro. Corregirlo exige `DROP FUNCTION` por cambio de firma | Menor |
 | `iniciar_sesion_app()` devuelve el perfil sin `area` ni `recibe_solicitudes`, así que la aplicación los pide en una segunda llamada. Contradice el propósito de ADR-017 | Menor |
 | El orden de ejecución de los guiones SQL no coincide con su numeración: `011_clave_ubicacion` debe ejecutarse antes que `008_importacion`. Documentado en `sql/README.md` | Menor |
+| Las cuentas de solicitante son compartidas (`Mecánicos Molino`, `FAISMON`). Es deliberado: el personal de planta no tiene correo corporativo. La trazabilidad se sostiene porque el formulario exige el nombre completo en cada envío. Sin recuperación de contraseña: las direcciones no existen y el administrador debe restablecerlas | Menor |
 
 ## Mejoras futuras identificadas
 
@@ -69,3 +73,13 @@ No implementar si ponen en riesgo el piloto.
     comparte entre pestañas, decisión tomada para no añadir fricción al
     uso de madrugada. En un equipo compartido convendría sesión por
     pestaña o cierre automático por inactividad
+18. Vista previa por rol para el administrador: un selector que muestre qué
+    paneles ve cada rol, sin cambiar de identidad. Útil para revisar la
+    interfaz. **No sirve para auditar permisos**: la consulta seguiría
+    haciéndose con credenciales de administrador. Para verificar que un rol
+    no ve lo que no debe, hay que iniciar sesión con esa cuenta
+19. Permitir que el solicitante elija el área de destino. Hoy la solicitud
+    va siempre al área del perfil, así que un material eléctrico pedido por
+    un mecánico llega a mantenimiento y se deriva a mano. Decisión tomada a
+    conciencia: obliga menos al mecánico, que no debería clasificar el
+    material antes de buscarlo
