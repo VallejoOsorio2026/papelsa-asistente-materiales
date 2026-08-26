@@ -146,6 +146,12 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
 begin
+  -- PENDIENTE-011: sin esta comprobacion la funcion se
+  -- ejecutaba con permisos elevados sin verificar quien llama.
+  if not public.es_usuario_activo() then
+    raise exception 'Se requiere sesion activa.';
+  end if;
+
   if p_estado not in ('vista','atendida','descartada') then
     raise exception 'Estado no valido.';
   end if;
