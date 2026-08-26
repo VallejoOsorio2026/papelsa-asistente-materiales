@@ -145,7 +145,10 @@ AS $function$
       s.creada_en,
       s.intentos
     from public.solicitudes_materiales s
-    where s.estado_correo = 'pendiente'
+    -- 'sin_servicio' se incluye (PENDIENTE-010): una solicitud
+    -- registrada antes de configurar el correo quedaria fuera
+    -- de la cola para siempre.
+    where s.estado_correo in ('pendiente', 'sin_servicio')
       and s.intentos < 3          -- no se reintenta indefinidamente
     order by s.creada_en
     limit p_limite
