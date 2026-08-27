@@ -50,13 +50,18 @@ function pintarFormularioSolicitud(solicitud) {
         + 'placeholder="Nombre y apellido">'
         + '</div>';
 
+  // La orden de trabajo es OPCIONAL: en planta no siempre se
+  // tiene el dato al pedir el material, y exigirla impedia
+  // registrar solicitudes reales. Si se escribe, debe ser
+  // valida: una orden mal tecleada es peor que ninguna.
   html += '<div class="campo">'
-        + '<label for="sol-orden">Orden de trabajo</label>'
+        + '<label for="sol-orden">Orden de trabajo '
+        + '<span class="etiqueta-opcional">opcional</span></label>'
         + '<input type="text" id="sol-orden" class="dato" '
         + 'inputmode="numeric" maxlength="7" '
         + 'placeholder="7 dígitos">'
-        + '<span class="ayuda-campo">Siete dígitos, sin letras '
-        + 'ni símbolos.</span>'
+        + '<span class="ayuda-campo">Si no la tienes a mano, déjala '
+        + 'vacía y envía la solicitud igual.</span>'
         + '</div>';
 
   html += '<button class="boton" id="boton-enviar-solicitud">'
@@ -74,9 +79,23 @@ function pintarFormularioSolicitud(solicitud) {
 // validarOrden()
 // Se valida aqui y tambien en la base de datos: una
 // comprobacion que solo vive en el navegador no protege nada.
+//
+// Vacia se considera VALIDA (orden opcional). Con contenido,
+// deben ser exactamente 7 digitos.
 // ------------------------------------------------------------
 function validarOrden(valor) {
-  return /^[0-9]{7}$/.test(String(valor || '').trim());
+  const v = String(valor || '').trim();
+  if (v === '') return true;
+  return /^[0-9]{7}$/.test(v);
+}
+
+
+// ------------------------------------------------------------
+// hayOrden()
+// Distingue "vacia y valida" de "escrita y valida".
+// ------------------------------------------------------------
+function hayOrden(valor) {
+  return String(valor || '').trim() !== '';
 }
 
 
@@ -100,7 +119,7 @@ async function enviarSolicitudMateriales(solicitante, orden) {
 
   const { data, error } = await db.rpc('enviar_solicitud_materiales', {
     p_solicitante: solicitante,
-    p_orden: orden,
+    p_orden: hayOrden(orden) ? String(orden).trim() : null,
     p_materiales: materiales
   });
 
@@ -178,18 +197,29 @@ function pintarBandeja(filas) {
     });
 
     const nueva = s.estado === 'nueva';
+    const conOrden = s.orden_trabajo !== null
+                  && s.orden_trabajo !== undefined
+                  && String(s.orden_trabajo).trim() !== '';
 
     html += '<div class="solicitud-fila' + (nueva ? ' nueva' : '') + '">';
 
     html += '<div class="solicitud-cabecera">'
-          + '<span class="solicitud-orden-grupo">'
-          + '<span class="dato solicitud-orden">OT '
-          + escapar(s.orden_trabajo) + '</span>'
-          + '<button class="copiar-orden" '
-          + 'data-orden="' + escapar(s.orden_trabajo) + '" '
-          + 'title="Copiar número de orden" '
-          + 'aria-label="Copiar número de orden">⧉</button>'
-          + '</span>'
+          + '<span class="solicitud-orden-grupo">';
+
+    // Sin orden de trabajo se avisa de forma visible: el
+    // ingeniero puede necesitarla para la reserva en SAP.
+    if (conOrden) {
+      html += '<span class="dato solicitud-orden">OT '
+            + escapar(s.orden_trabajo) + '</span>'
+            + '<button class="copiar-orden" '
+            + 'data-orden="' + escapar(s.orden_trabajo) + '" '
+            + 'title="Copiar número de orden" '
+            + 'aria-label="Copiar número de orden">⧉</button>';
+    } else {
+      html += '<span class="solicitud-sin-orden">sin orden de trabajo</span>';
+    }
+
+    html += '</span>'
           + '<span class="solicitud-fecha">' + fecha + '</span>'
           + '</div>';
 
