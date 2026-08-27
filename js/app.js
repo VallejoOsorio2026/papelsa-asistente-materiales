@@ -583,6 +583,84 @@ function refrescarSolicitud() {
     });
   }
 
+  // Reformular un material sin rehacer la consulta entera
+  destino.querySelectorAll('.boton-corregir').forEach(function (boton) {
+    boton.addEventListener('click', async function (e) {
+      e.stopPropagation();
+
+      const orden = Number(this.dataset.orden);
+      const campo = document.getElementById('corregir-' + orden);
+      const texto = campo ? campo.value.trim() : '';
+
+      if (texto === '') {
+        if (campo) campo.focus();
+        return;
+      }
+
+      this.disabled = true;
+      this.textContent = 'Buscando…';
+
+      await rebuscarItem(orden, texto);
+
+      // El bloque reformulado queda abierto: es donde el
+      // ingeniero está mirando.
+      bloquesAbiertos = {};
+      bloquesAbiertos[orden] = true;
+      refrescarSolicitud();
+    });
+  });
+
+  destino.querySelectorAll('.texto-corregir').forEach(function (campo) {
+    campo.addEventListener('click', function (e) { e.stopPropagation(); });
+    campo.addEventListener('keydown', function (e) {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        const b = destino.querySelector(
+          '.boton-corregir[data-orden="' + this.dataset.orden + '"]');
+        if (b) b.click();
+      }
+    });
+  });
+
+  // Añadir un material que no se pensó al escribir la consulta
+  const botonAgregar = document.getElementById('boton-agregar');
+  if (botonAgregar) {
+    botonAgregar.addEventListener('click', async function () {
+
+      const campo = document.getElementById('texto-agregar');
+      const texto = campo ? campo.value.trim() : '';
+
+      if (texto === '') {
+        if (campo) campo.focus();
+        return;
+      }
+
+      this.disabled = true;
+      this.textContent = 'Buscando…';
+
+      const antes = solicitudActual.items.length;
+      await agregarItem(texto);
+
+      // Se abre el primero de los añadidos, que es lo nuevo
+      // que hay que resolver.
+      bloquesAbiertos = {};
+      if (solicitudActual.items.length > antes) {
+        bloquesAbiertos[solicitudActual.items[antes].orden] = true;
+      }
+      refrescarSolicitud();
+    });
+  }
+
+  const campoAgregar = document.getElementById('texto-agregar');
+  if (campoAgregar) {
+    campoAgregar.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        const b = document.getElementById('boton-agregar');
+        if (b) b.click();
+      }
+    });
+  }
+
   // Salida para SAP
   const botonSalida = document.getElementById('boton-salida');
   if (botonSalida) {
