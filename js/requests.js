@@ -226,3 +226,111 @@ async function marcarResuelta(orden, resuelta) {
     p_resuelta: resuelta
   });
 }
+
+
+// ------------------------------------------------------------
+// rebuscarItem()
+// Cambia el texto de un item y vuelve a buscar SOLO ese.
+//
+// Antes, si de "cinta, disco de corte y sal" solo fallaba la
+// cinta, habia que rehacer la consulta entera y volver a
+// elegir lo que ya estaba bien. Cada correccion costaba tres
+// selecciones perdidas.
+//
+// Se conserva el orden para que el item no cambie de sitio, y
+// se registra como busqueda nueva: es informacion valiosa
+// saber que la primera redaccion no sirvio.
+// ------------------------------------------------------------
+async function rebuscarItem(orden, textoNuevo) {
+
+  const item = solicitudActual.items.find(function (i) {
+    return i.orden === orden;
+  });
+  if (!item) return;
+
+  const texto = String(textoNuevo || '').trim();
+  if (texto === '') return;
+
+  // La busqueda anterior se cierra como no resuelta: el
+  // ingeniero tuvo que reformular, y eso es un fallo del motor
+  // aunque nadie lo reporte.
+  if (item.idBusqueda && item.elegido === null) {
+    await marcarResuelta(orden, false);
+  }
+
+  const respuesta  = await buscar(texto);
+  const candidatos = respuesta.resultados || [];
+
+  item.textoOriginal   = texto;
+  item.texto           = texto;
+  item.nivel           = respuesta.nivel;
+  item.sinInventario   = respuesta.sin_inventario === true;
+  item.mensaje         = respuesta.mensaje;
+  item.candidatos      = candidatos;
+  item.hayMas          = respuesta.hay_mas === true;
+  item.limite          = 5;
+  item.elegido         = null;
+  item.reformulado     = true;
+
+  item.idBusqueda = await registrarBusquedaFallida(
+    texto, respuesta.nivel, candidatos.length
+  );
+}
+
+
+// ------------------------------------------------------------
+// agregarItem()
+// Anade un material a la solicitud en curso, sin tocar lo ya
+// elegido. Para lo que no se penso al escribir la consulta
+// inicial.
+// ------------------------------------------------------------
+async function agregarItem(texto) {
+
+  if (!solicitudActual) return;
+
+  const limpio = String(texto || '').trim();
+  if (limpio === '') return;
+
+  // interpretar() puede devolver varios items: "dos correas y
+  // un reten" es una entrada valida aqui tambien.
+  const nuevos = interpretar(limpio);
+
+  let siguiente = solicitudActual.items.reduce(function (max, i) {
+    return Math.max(max, i.orden);
+  }, 0);
+
+  for (let k = 0; k < nuevos.length; k++) {
+
+    const it = nuevos[k];
+    siguiente += 1;
+
+    const respuesta  = await buscar(it.texto);
+    const candidatos = respuesta.resultados || [];
+
+    const item = {
+      orden:           siguiente,
+      textoOriginal:   it.textoOriginal,
+      texto:           it.texto,
+      cantidad:        it.cantidad,
+      cantidadAsumida: it.cantidadAsumida,
+      nivel:           respuesta.nivel,
+      sinInventario:   respuesta.sin_inventario === true,
+      mensaje:         respuesta.mensaje,
+      candidatos:      candidatos,
+      idBusqueda:      null,
+      hayMas:          respuesta.hay_mas === true,
+      limite:          5,
+      elegido:         null
+    };
+
+    item.idBusqueda = await registrarBusquedaFallida(
+      it.texto, respuesta.nivel, candidatos.length
+    );
+
+    solicitudActual.items.push(item);
+  }
+
+  // El mensaje original se amplia: la trazabilidad debe
+  // reflejar todo lo que se pidio, no solo la primera frase.
+  solicitudActual.mensajeOriginal += ' · ' + limpio;
+}
