@@ -106,7 +106,23 @@ function conectarBotones() {
       }
     });
   }
-
+  // Ver la contrasena escrita. En movil no hay boton nativo y
+  // una clave repartida en planta se teclea a ciegas.
+  const verClave = document.getElementById('ver-clave');
+  if (verClave) {
+    verClave.addEventListener('click', function () {
+      const campo = document.getElementById('contrasena');
+      if (!campo) return;
+      const visible = campo.type === 'text';
+      campo.type = visible ? 'password' : 'text';
+      this.textContent = visible ? 'Ver' : 'Ocultar';
+      this.classList.toggle('activo', !visible);
+      this.setAttribute('aria-label',
+        visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
+      campo.focus();
+    });
+  }
+  
   // Enter en cualquiera de los dos campos inicia sesion.
   ['correo', 'contrasena'].forEach(function (id) {
     document.getElementById(id)
