@@ -1328,3 +1328,12 @@ a:hover { color: var(--acento-vivo); }
 }
 .ver-clave:hover { color: var(--acento); }
 .ver-clave.activo { color: var(--acento); }
+
+
+/* Edge y Chrome insertan su propio boton de revelar. Con el
+   nuestro presente, quedan dos superpuestos. Se oculta el
+   nativo: el nuestro funciona igual en escritorio y en movil. */
+.campo-clave input::-ms-reveal,
+.campo-clave input::-ms-clear {
+  display: none;
+}
