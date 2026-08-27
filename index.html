@@ -33,8 +33,12 @@
 
       <div class="campo">
         <label for="contrasena">Contraseña</label>
-        <input type="password" id="contrasena"
-               autocomplete="current-password">
+        <div class="campo-clave">
+          <input type="password" id="contrasena"
+                 autocomplete="current-password">
+          <button type="button" id="ver-clave" class="ver-clave"
+                  aria-label="Mostrar contraseña">Ver</button>
+        </div>
       </div>
 
       <button id="boton-entrar" class="boton">Entrar</button>
