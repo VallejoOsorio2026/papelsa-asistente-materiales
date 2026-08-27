@@ -127,7 +127,41 @@ function pintarSolicitud(solicitud) {
           + 'style="margin-top:16px">Generar salida para SAP</button>';
   }
 
+  // Añadir un material que no se pensó al escribir la consulta,
+  // sin perder lo ya elegido.
+  html += '<div class="agregar-material">'
+        + '<label for="texto-agregar">¿Falta algo?</label>'
+        + '<div class="buscador">'
+        + '<input type="text" id="texto-agregar" autocomplete="off" '
+        + 'placeholder="otro material">'
+        + '<button class="boton boton-discreto" id="boton-agregar">'
+        + 'Buscar más</button>'
+        + '</div></div>';
+
   return html;
+}
+
+
+// ------------------------------------------------------------
+// pintarCorregirItem()
+// Reformular un material sin rehacer la consulta entera.
+//
+// Si de "cinta, disco de corte y sal" solo falla la cinta,
+// antes habia que empezar de cero y volver a elegir lo que ya
+// estaba bien.
+// ------------------------------------------------------------
+function pintarCorregirItem(item) {
+  return '<div class="corregir-item">'
+       + '<label for="corregir-' + item.orden + '">'
+       + 'Reformular este material</label>'
+       + '<div class="buscador">'
+       + '<input type="text" class="texto-corregir" '
+       + 'id="corregir-' + item.orden + '" '
+       + 'data-orden="' + item.orden + '" autocomplete="off" '
+       + 'value="' + escapar(item.textoOriginal) + '">'
+       + '<button class="boton boton-discreto boton-corregir" '
+       + 'data-orden="' + item.orden + '">Buscar de nuevo</button>'
+       + '</div></div>';
 }
 
 
@@ -221,9 +255,9 @@ function pintarItem(item) {
           + 'Ver más resultados</button>';
   }
   html += pintarAvisoBusqueda(item.orden);
+  html += pintarCorregirItem(item);
 
   html += '</div></div>';
-  return html;
 }
 
 
