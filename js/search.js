@@ -258,6 +258,7 @@ function pintarItem(item) {
   html += pintarCorregirItem(item);
 
   html += '</div></div>';
+  return html;
 }
 
 
