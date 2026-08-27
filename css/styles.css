@@ -1293,3 +1293,38 @@ a:hover { color: var(--acento-vivo); }
   border-color: var(--acento);
   background: var(--papel);
 }
+
+
+/* ============================================================
+   VER LA CONTRASEÑA
+   ============================================================
+   Los navegadores móviles no añaden el botón que sí pone Edge
+   en escritorio. Sin él, una contraseña repartida en planta se
+   teclea a ciegas.
+   ============================================================ */
+.campo-clave {
+  position: relative;
+  display: block;
+}
+.campo-clave input {
+  width: 100%;
+  padding-right: 62px;   /* deja sitio al botón */
+}
+.ver-clave {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: 36px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tinta-suave);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ver-clave:hover { color: var(--acento); }
+.ver-clave.activo { color: var(--acento); }
