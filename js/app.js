@@ -555,13 +555,13 @@ function refrescarSolicitud() {
     botonExcel.addEventListener('click', function () {
       const orden = (document.getElementById('sol-orden') || {}).value || '';
       const nombre = (document.getElementById('sol-nombre') || {}).value || '';
-      if (!validarOrden(orden)) {
+           if (!validarOrden(orden)) {
         mostrarAviso('aviso-solicitud',
-          'Escribe la orden de trabajo: 7 dígitos.', 'error');
+          'La orden debe tener 7 dígitos, o quedar vacía.', 'error');
         return;
       }
       descargarExcel(solicitudActual, {
-        orden: orden.trim(),
+        orden: hayOrden(orden) ? orden.trim() : 'sin orden',
         solicitante: nombre.trim() || 'sin nombre'
       });
     });
@@ -754,10 +754,13 @@ async function enviarSolicitud() {
     return;
   }
 
+  // Orden OPCIONAL: vacia se admite. Si se escribe algo, debe
+  // ser valida. Una orden mal tecleada es peor que ninguna,
+  // porque parece correcta y lleva a la reserva equivocada.
   if (!validarOrden(orden)) {
     mostrarAviso('aviso-solicitud',
       'La orden de trabajo debe tener exactamente 7 dígitos, '
-      + 'sin letras ni símbolos.', 'error');
+      + 'sin letras ni símbolos. Si no la tienes, déjala vacía.', 'error');
     document.getElementById('sol-orden').focus();
     return;
   }
@@ -780,9 +783,10 @@ async function enviarSolicitud() {
   document.getElementById('bloque-solicitud').innerHTML =
     '<h2>Solicitud enviada</h2>'
     + '<p class="encuesta-gracias">' + escapar(r.mensaje) + '</p>'
-    + '<p class="ayuda-buscador">Orden ' + escapar(orden)
+    + '<p class="ayuda-buscador">'
+    + (hayOrden(orden) ? 'Orden ' + escapar(orden)
+                       : 'Sin orden de trabajo')
     + ' · ' + escapar(nombre) + '</p>';
-
   await guardarSolicitud(solicitudActual, solicitudActual.tiempoMs || null);
 }
 
