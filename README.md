@@ -85,13 +85,32 @@ Detalle completo en [`docs/arquitectura.md`](docs/arquitectura.md).
 
 ## Fuente de los datos
 
-El inventario proviene de una exportación de SAP obtenida mediante un guion externo
-(aproximadamente 48 minutos de ejecución). No existe conexión directa con SAP.
-Esta es una restricción conocida del piloto y está registrada como oportunidad de mejora.
+El inventario proviene de una exportación de SAP obtenida mediante un guion externo, macro de excel
+(aproximadamente 48 minutos de ejecución). No existe conexión directa con SAP; es una
+restricción conocida del piloto y está registrada como oportunidad de mejora.
 
-Cada carga genera una versión de datos. La versión anterior permanece activa hasta
-que la nueva se valida por completo. Si una carga falla, el sistema sigue operando
-con la última versión válida.
+El archivo de origen nunca toca este repositorio. Se lee y se envía directamente desde
+el navegador del administrador hacia la base de datos del proyecto (ADR-010); en ningún
+momento pasa por GitHub ni queda almacenado en la carpeta `data/`, que contiene
+únicamente documentación.
+
+Cada actualización se carga por lotes, no como peticiones individuales, e incorpora
+solo las columnas necesarias para la operación del asistente. Las columnas más sensibles
+(precios, consumos, valores) se excluyen de la carga para reducir la exposición de
+información alojada fuera de la organización (ADR-005).
+
+Antes de reemplazar la información vigente, la carga se valida automáticamente contra
+el número de filas esperado. La versión anterior permanece activa mientras esa
+validación no se complete; si la carga falla o resulta incompleta, el sistema sigue
+operando con la última versión válida — nunca queda funcionando con una actualización
+parcial (RN-012, RN-013). Los datos ya cargados no admiten edición directa: corregir un
+valor exige una carga completa nueva y auditable (ADR-006). Solo se conservan la versión
+activa y la inmediatamente anterior; el resto queda únicamente como registro de
+auditoría (ADR-002).
+
+Toda esta información permanece protegida en la base de datos mediante autenticación y
+políticas de seguridad a nivel de fila (RLS); la visibilidad del repositorio no
+interviene en ese control de acceso.
 
 ## Severidad de errores
 
