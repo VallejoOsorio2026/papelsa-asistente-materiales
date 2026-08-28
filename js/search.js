@@ -108,8 +108,13 @@ function pintarSolicitud(solicitud) {
           + '</div>';
   }
 
+  // Solo se despliega el PRIMER pendiente. Abrir todos satura
+  // la pantalla cuando la consulta trae varios materiales.
+  let yaAbierto = false;
   solicitud.items.forEach(function (item) {
-    html += pintarItem(item);
+    const abrir = (item.elegido === null) && !yaAbierto;
+    if (abrir) yaAbierto = true;
+    html += pintarItem(item, abrir);
   });
 
     // El solicitante envia al ingeniero; el ingeniero genera la
@@ -169,11 +174,13 @@ function pintarCorregirItem(item) {
 // pintarItem()
 // Cada material es un bloque desplegable con indicador de
 // estado: rojo mientras no se elige, verde al elegir.
+// El segundo parametro "abrir" lo decide pintarSolicitud():
+// solo el primer pendiente llega con abrir = true.
 // ------------------------------------------------------------
-function pintarItem(item) {
+function pintarItem(item, abrir) {
 
   const resuelto = item.elegido !== null;
-  const abierto  = !resuelto;
+  const abierto  = abrir === true;
 
   let html = '<div class="item-solicitud' + (resuelto ? ' resuelto' : '')
            + '" data-orden="' + item.orden + '">';
