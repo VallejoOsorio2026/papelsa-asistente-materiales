@@ -10,6 +10,21 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 
 ## [No publicado]
 
+### Corregido
+- **Prefiltro de `buscar_materiales()` sin orden.** El `LIMIT 600` cortaba
+  sin `ORDER BY`: con más de 600 candidatos, Postgres descartaba dos tercios
+  al azar (medido: 1.884 candidatos para `retenedor 110x142x15 MM`). Ahora
+  ordena por conteo de coincidencias (referencias, medidas, palabras) antes
+  de cortar, no por similitud de cadena completa, que penalizaba
+  descripciones largas. Validado: `retenedor 110x142x15` → puesto 1 de
+  1.884; `AC Rsc` → puesto 42 de 4.231. Ambos sobreviven el corte; lo que
+  falta en cada uno es otro pendiente ya documentado (vocabulario,
+  PENDIENTE-016)
+
+### En construcción
+- Banco de pruebas y medición objetiva del motor
+- Pantalla de administración de sinónimos sugeridos
+
 ### En construcción
 - Banco de pruebas y medición objetiva del motor
 - Pantalla de administración de sinónimos sugeridos
