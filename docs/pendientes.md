@@ -25,6 +25,7 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | PENDIENTE-011 | `marcar_solicitud()` sin verificación de sesión | 2026-08-26 | Resuelto. Se añadió `es_usuario_activo()` al inicio, como en el resto de funciones `SECURITY DEFINER` |
 | PENDIENTE-012 | Ratificar el alcance ampliado a contratistas | 2026-08-26 | Autorizado. Se confirmó el acceso de personal externo al catálogo técnico, en las mismas condiciones del piloto: solo lectura, sin costos ni consumos |
 | PENDIENTE-014 | Paso a producción de las cuentas de solicitante | 2026-08-26 | Hecho. `Mecánicos Molino` y `FAISMON` pasaron al área `mantenimiento`. Verificado con envío controlado a los tres ingenieros, avisados previamente para que el remitente no cayera en spam |
+| PENDIENTE-017 | Prefiltro de búsqueda (`LIMIT 600`) cortaba sin orden: con más de 600 candidatos, Postgres descartaba dos tercios al azar. | 2026-08-31 | Corregido: orden por conteo de coincidencias (refs, medidas, palabras). Validado: retenedor 110x142x15 → puesto 1 de 1.884; AC Rsc → puesto 42 de 4.231. Ambos sobreviven el corte; lo pendiente en cada uno es otro problema (vocabulario, PENDIENTE-016) |
 
 ## Incidencias conocidas
 
