@@ -11,6 +11,9 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 ## [No publicado]
 
 ### Corregido
+- Tres funciones que corrían en Supabase sin reflejarse en `sql/`
+  (`extraer_medidas`, `enviar_solicitud_materiales`, `cuerpo_correo_solicitud`)
+  y la restricción de `orden_trabajo` opcional, quedan versionadas
 - **Prefiltro de `buscar_materiales()` sin orden.** El `LIMIT 600` cortaba
   sin `ORDER BY`: con más de 600 candidatos, Postgres descartaba dos tercios
   al azar (medido: 1.884 candidatos para `retenedor 110x142x15 MM`). Ahora
