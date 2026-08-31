@@ -24,21 +24,17 @@
 -- ------------------------------------------------------------
 -- enviar_solicitud_materiales()
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.enviar_solicitud_materiales(
-  p_solicitante text,
-  p_orden       text,
-  p_materiales  jsonb
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
+CREATE OR REPLACE FUNCTION public.enviar_solicitud_materiales(p_solicitante text, p_orden text, p_materiales jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
 AS $function$
 declare
   v_perfil      public.perfiles%rowtype;
   v_destinos    jsonb;
   v_id          uuid;
-  v_orden       text := trim(coalesce(p_orden, ''));
+  v_orden       text := nullif(trim(coalesce(p_orden, '')), '');
   v_solicitante text := trim(coalesce(p_solicitante, ''));
 begin
   if not public.es_usuario_activo() then
@@ -56,10 +52,11 @@ begin
       'mensaje', 'Escribe tu nombre completo.');
   end if;
 
-  if v_orden !~ '^[0-9]{7}$' then
+  -- ORDEN DE TRABAJO OPCIONAL. Si se escribe, debe ser de 7 digitos.
+  if v_orden is not null and v_orden !~ '^[0-9]{7}$' then
     return jsonb_build_object('ok', false,
       'mensaje', 'La orden de trabajo debe tener exactamente 7 digitos, '
-              || 'sin letras ni simbolos.');
+              || 'sin letras ni simbolos. Si no la tienes, dejala vacia.');
   end if;
 
   if p_materiales is null or jsonb_array_length(p_materiales) = 0 then
@@ -90,16 +87,14 @@ begin
     'ok', true,
     'id', v_id,
     'destinatarios', v_destinos,
-    'mensaje', format('Solicitud registrada para la orden %s. '
-                   || 'Se avisara a %s ingeniero%s.',
-                      v_orden,
+    'mensaje', format('Solicitud registrada%s. Se avisara a %s ingeniero%s.',
+                      case when v_orden is null then ' sin orden de trabajo'
+                           else ' para la orden ' || v_orden end,
                       jsonb_array_length(v_destinos),
                       case when jsonb_array_length(v_destinos) = 1
                            then '' else 's' end));
 end;
 $function$;
-
-
 -- ------------------------------------------------------------
 -- solicitudes_pendientes()
 -- La bandeja. Se ve aunque el correo falle o caiga en spam: el
@@ -166,3 +161,11 @@ begin
   return found;
 end;
 $function$;
+-- ORDEN DE TRABAJO OPCIONAL (antes obligatoria). Vacia se admite;
+-- escrita debe ser de 7 digitos.
+alter table public.solicitudes_materiales
+  drop constraint if exists solicitudes_materiales_orden_trabajo_check;
+
+alter table public.solicitudes_materiales
+  add constraint solicitudes_materiales_orden_trabajo_check
+  check (orden_trabajo is null or orden_trabajo ~ '^[0-9]{7}$');
