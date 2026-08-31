@@ -25,22 +25,112 @@
 -- servicio.
 -- ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.cuerpo_correo_solicitud(p_id uuid)
-RETURNS jsonb
-LANGUAGE plpgsql
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
 AS $function$
 declare
-  s      public.solicitudes_materiales%rowtype;
-  v_html text;
-  v_txt  text;
-  m      jsonb;
+  s        public.solicitudes_materiales%rowtype;
+  v_html   text;
+  v_txt    text;
+  v_ot     text;
+  v_ot_asu text;
+  m        jsonb;
 begin
   select * into s from public.solicitudes_materiales where id = p_id;
   if s.id is null then
     return jsonb_build_object('ok', false);
   end if;
 
+  v_ot     := coalesce(s.orden_trabajo, 'sin orden de trabajo');
+  v_ot_asu := coalesce('OT ' || s.orden_trabajo, 'SIN ORDEN DE TRABAJO');
+
+  v_html := '<div style="font-family:-apple-system,Segoe UI,Roboto,'
+         || 'Helvetica,Arial,sans-serif;color:#333;max-width:760px">';
+
+  v_html := v_html
+    || '<p style="font-size:15px;line-height:1.5">'
+    || 'El ' || s.rol_solicitante || ' <strong>' || s.solicitante
+    || '</strong> solicitó los siguientes materiales';
+
+  if s.orden_trabajo is not null then
+    v_html := v_html
+      || ' para la orden de trabajo <strong style="font-family:monospace">'
+      || s.orden_trabajo || '</strong>.';
+  else
+    v_html := v_html || '.';
+  end if;
+
+  v_html := v_html || '</p>';
+
+  if s.orden_trabajo is null then
+    v_html := v_html
+      || '<p style="font-size:13px;background:#FFF4E0;border-left:3px solid '
+      || '#C77700;padding:10px 12px;margin:0 0 16px">'
+      || '<strong>Sin orden de trabajo.</strong> No se indicó al enviar la '
+      || 'solicitud. Si la necesitas para crear la reserva en SAP, '
+      || 'pídesela a quien la envió.</p>';
+  end if;
+
+  v_html := v_html
+    || '<table cellspacing="0" cellpadding="8" '
+    || 'style="border-collapse:collapse;font-size:13px;width:100%">'
+    || '<tr style="background:#006975;color:#fff;text-align:left">'
+    || '<th>Componente</th><th>Denominación</th><th>Ctd. Neces.</th>'
+    || '<th>UM</th><th>T</th><th>S</th><th>Almacén</th><th>Centro</th></tr>';
+
+  for m in select * from jsonb_array_elements(s.materiales)
+  loop
+    v_html := v_html
+      || '<tr style="border-bottom:1px solid #ddd">'
+      || '<td style="font-family:monospace"><strong>'
+      || coalesce(m->>'componente','') || '</strong></td>'
+      || '<td>' || coalesce(m->>'denominacion','') || '</td>'
+      || '<td style="font-family:monospace">'
+      || coalesce(m->>'cantidad','') || '</td>'
+      || '<td>' || coalesce(m->>'um','') || '</td>'
+      || '<td>' || coalesce(m->>'t','') || '</td>'
+      || '<td>' || coalesce(m->>'s','') || '</td>'
+      || '<td>' || coalesce(m->>'almacen','') || '</td>'
+      || '<td>' || coalesce(m->>'centro','') || '</td>'
+      || '</tr>';
+  end loop;
+
+  v_html := v_html || '</table>';
+
+  v_html := v_html
+    || '<p style="font-size:13px;color:#6D6D6D;margin-top:18px">'
+    || 'Puedes copiar la tabla directamente y pegarla en SAP. '
+    || 'Los datos de existencias corresponden a la última '
+    || 'actualización del inventario, no a SAP en tiempo real.</p>'
+    || '<p style="font-size:12px;color:#6D6D6D">'
+    || 'Asistente de Materiales · PAPELSA Molino</p></div>';
+
+  v_txt := 'El ' || s.rol_solicitante || ' ' || s.solicitante
+        || ' solicito los siguientes materiales ('
+        || v_ot || ').' || chr(10) || chr(10);
+
+  for m in select * from jsonb_array_elements(s.materiales)
+  loop
+    v_txt := v_txt
+      || coalesce(m->>'componente','') || '  '
+      || coalesce(m->>'denominacion','') || '  '
+      || coalesce(m->>'cantidad','') || ' '
+      || coalesce(m->>'um','') || '  '
+      || coalesce(m->>'centro','') || '/' || coalesce(m->>'almacen','')
+      || chr(10);
+  end loop;
+
+  return jsonb_build_object(
+    'ok', true,
+    'asunto', 'Solicitud de materiales · ' || v_ot_asu
+              || ' · ' || s.solicitante,
+    'html', v_html,
+    'texto', v_txt,
+    'destinatarios', s.destinatarios);
+end;
+$function$;
   -- ---------- Version HTML ----------
   -- La tabla HTML conserva las columnas al copiar y pegar en
   -- SAP o Excel, cosa que el texto plano no garantiza.
