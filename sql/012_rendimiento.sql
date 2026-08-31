@@ -124,51 +124,27 @@ $function$;
 
 -- ------------------------------------------------------------
 -- buscar_materiales()
--- El motor. Devuelve candidatos ordenados por puntaje.
+-- HALLAZGO 27-08-2026: el LIMIT 600 cortaba SIN ORDEN, asi que
+-- Postgres devolvia 600 filas arbitrarias. Con mas de 600
+-- candidatos (medido: 1.884 para "retenedor 110x142x15 MM"),
+-- el material correcto podia quedar fuera sin puntuarse nunca.
 --
--- PREFILTRO OBLIGATORIO (error 12 del historial): sin el CTE
--- candidatos_previos con LIMIT 600, comparar palabra a palabra
--- sobre 65.883 filas agota el tiempo de espera (57014, mas de
--- 8 segundos). Con prefiltro: 800-2800 ms.
+-- Orden por CONTEO de coincidencias (referencias, medidas,
+-- palabras), no por similitud de cadena completa: esta ultima
+-- penaliza descripciones largas frente a cortas (intento
+-- revertido el 27-08).
 --
--- El umbral 0.10 va EXPLICITO con similarity() (error 13): la
--- instruccion SET pg_trgm.similarity_threshold solo dura la
--- sesion, y al perderse volvia a 0.3 descartando candidatos
--- validos ("sinta" nunca llegaba a compararse con "cinta").
---
--- RN-016 / ADR-012: la disponibilidad pesa 4 puntos sobre mas
--- de 100. Reordena candidatos ya validos, nunca eleva un
--- material incorrecto por tener stock.
---
--- RN-030: disponible = libre utilizacion + consignacion.
--- El stock de proyectos va aparte como comprometido: existe
--- fisicamente pero esta asignado, y no se oculta.
---
--- SECURITY DEFINER con verificacion de sesion en la primera
--- linea: la funcion consulta el inventario con permisos
--- elevados, asi que comprueba ella misma quien pregunta.
+-- Validado 31-08-2026: retenedor 110x142x15 -> puesto 1 de 1.884
+-- candidatos. AC Rsc -> puesto 42-51 de 4.231. Ambos sobreviven
+-- el corte sin problema; lo que falta en cada uno es vocabulario
+-- (retenedor/sello, PENDIENTE candidato a sinonimo) y la
+-- abreviatura AC (PENDIENTE-016), no el prefiltro.
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.buscar_materiales(
-  p_consulta text,
-  p_limite   integer DEFAULT 5
-)
-RETURNS TABLE(
-  material          text,
-  descripcion       text,
-  puntaje           numeric,
-  origen            text,
-  disponible        numeric,
-  comprometido      numeric,
-  unidad            text,
-  centro            text,
-  almacen           text,
-  ubicacion         text,
-  ambito            text,
-  material_antiguo  text
-)
-LANGUAGE plpgsql
-STABLE SECURITY DEFINER
-SET search_path TO 'public', 'extensions'
+CREATE OR REPLACE FUNCTION public.buscar_materiales(p_consulta text, p_limite integer DEFAULT 5)
+ RETURNS TABLE(material text, descripcion text, puntaje numeric, origen text, disponible numeric, comprometido numeric, unidad text, centro text, almacen text, ubicacion text, ambito text, material_antiguo text)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
 AS $function$
 declare
   v_norm     text;
@@ -188,8 +164,6 @@ begin
   end if;
 
   v_norm := public.normalizar_texto(p_consulta);
-
-  -- Abreviaturas del inventario + jerga de planta
   v_exp := coalesce(public.expandir_consulta(p_consulta), v_norm);
 
   v_refs     := public.extraer_referencias(v_exp);
@@ -197,8 +171,20 @@ begin
   v_palabras := public.extraer_palabras(v_exp);
 
   return query
-  with candidatos_previos as (
-    select i.*
+  with calculado as (
+    select
+      i.*,
+      (lower(i.material) = v_norm)                                as cod_exacto,
+      (i.material_antiguo_norm is not null
+       and i.material_antiguo_norm = v_norm)                      as cod_antiguo,
+      (select count(*) from unnest(v_refs) r
+        where i.texto_normalizado like '%' || r || '%')           as n_refs,
+      (select count(*) from unnest(v_medidas) m
+        where i.texto_normalizado like '%' || m || '%')           as n_medidas,
+      (select count(*) from unnest(v_palabras) w
+        where i.texto_normalizado like '%' || w || '%')           as n_palabras,
+      similarity(i.texto_normalizado, v_norm)                     as sim,
+      similarity(i.texto_normalizado, v_exp)                      as sim_exp
     from public.inventario_materiales i
     where i.version_id = v_version
       and (
@@ -211,6 +197,15 @@ begin
          or exists (select 1 from unnest(v_refs) r
                     where i.texto_normalizado like '%' || r || '%')
           )
+  ),
+  candidatos_previos as (
+    select *
+    from calculado
+    order by
+      cod_exacto desc,
+      cod_antiguo desc,
+      (n_refs * 3 + n_medidas * 2 + n_palabras) desc,
+      greatest(sim, sim_exp) desc
     limit 600
   ),
   base as (
@@ -219,28 +214,18 @@ begin
       i.texto_breve_material,
       i.texto_normalizado,
       i.material_antiguo,
-      i.material_antiguo_norm,
       i.unidad_medida_base,
       i.centro, i.almacen, i.ubicacion, i.ambito_ubicacion,
-
       coalesce(i.stock_libre_utilizacion,0)
         + coalesce(i.stock_consignacion,0)          as disponible,
       coalesce(i.stock_proyectos,0)                 as comprometido,
-
-      similarity(i.texto_normalizado, v_norm)       as sim,
+      i.sim                                         as sim,
       public.similitud_palabras(v_exp, i.texto_normalizado) as sim_pal,
-
-      (lower(i.material) = v_norm)                  as cod_exacto,
-      (i.material_antiguo_norm is not null
-       and i.material_antiguo_norm = v_norm)        as cod_antiguo,
-
-      (select count(*) from unnest(v_refs) r
-        where i.texto_normalizado like '%' || r || '%')    as n_refs,
-      (select count(*) from unnest(v_medidas) m
-        where i.texto_normalizado like '%' || m || '%')    as n_medidas,
-      (select count(*) from unnest(v_palabras) w
-        where i.texto_normalizado like '%' || w || '%')    as n_palabras
-
+      i.cod_exacto,
+      i.cod_antiguo,
+      i.n_refs,
+      i.n_medidas,
+      i.n_palabras
     from candidatos_previos i
   ),
   puntuado as (
@@ -260,7 +245,6 @@ begin
           else 0
         end
       )::numeric as total,
-
       case
         when b.cod_exacto      then 'codigo'
         when b.cod_antiguo     then 'codigo antiguo'
@@ -272,18 +256,9 @@ begin
     from base b
   )
   select
-    p.material,
-    p.texto_breve_material,
-    round(p.total, 2),
-    p.origen,
-    p.disponible,
-    p.comprometido,
-    p.unidad_medida_base,
-    p.centro,
-    p.almacen,
-    p.ubicacion,
-    p.ambito_ubicacion,
-    p.material_antiguo
+    p.material, p.texto_breve_material, round(p.total, 2), p.origen,
+    p.disponible, p.comprometido, p.unidad_medida_base,
+    p.centro, p.almacen, p.ubicacion, p.ambito_ubicacion, p.material_antiguo
   from puntuado p
   order by p.total desc, p.disponible desc
   limit p_limite;
