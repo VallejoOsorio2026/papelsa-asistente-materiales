@@ -58,8 +58,8 @@ function pintarFormularioSolicitud(solicitud) {
         + '<label for="sol-orden">Orden de trabajo '
         + '<span class="etiqueta-opcional">opcional</span></label>'
         + '<input type="text" id="sol-orden" class="dato" '
-        + 'inputmode="numeric" maxlength="7" '
-        + 'placeholder="7 dígitos">'
+        + 'inputmode="numeric" maxlength="8" '
+        + 'placeholder="8 dígitos">'
         + '<span class="ayuda-campo">Si no la tienes a mano, déjala '
         + 'vacía y envía la solicitud igual.</span>'
         + '</div>';
@@ -86,7 +86,7 @@ function pintarFormularioSolicitud(solicitud) {
 function validarOrden(valor) {
   const v = String(valor || '').trim();
   if (v === '') return true;
-  return /^[0-9]{7}$/.test(v);
+  return /^[0-9]{8}$/.test(v);
 }
 
 
