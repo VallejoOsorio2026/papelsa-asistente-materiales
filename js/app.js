@@ -573,7 +573,7 @@ function refrescarSolicitud() {
       const nombre = (document.getElementById('sol-nombre') || {}).value || '';
            if (!validarOrden(orden)) {
         mostrarAviso('aviso-solicitud',
-          'La orden debe tener 7 dígitos, o quedar vacía.', 'error');
+          'La orden debe tener 8 dígitos, o quedar vacía.', 'error');
         return;
       }
       descargarExcel(solicitudActual, {
@@ -853,7 +853,7 @@ async function enviarSolicitud() {
   // porque parece correcta y lleva a la reserva equivocada.
   if (!validarOrden(orden)) {
     mostrarAviso('aviso-solicitud',
-      'La orden de trabajo debe tener exactamente 7 dígitos, '
+      'La orden de trabajo debe tener exactamente 8 dígitos, '
       + 'sin letras ni símbolos. Si no la tienes, déjala vacía.', 'error');
     document.getElementById('sol-orden').focus();
     return;
