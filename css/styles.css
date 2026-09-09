@@ -1337,48 +1337,83 @@ a:hover { color: var(--acento-vivo); }
 .campo-clave input::-ms-clear {
   display: none;
 }
-/* ---- Pestañas de modo de búsqueda por ítem ---- */
+/* ============================================================
+   PESTAÑAS DE MODO DE BÚSQUEDA (por ítem)
+   ============================================================
+   Dos vistas del mismo texto buscado. La activa se distingue
+   por relleno sólido, no solo por peso de letra: en el móvil y
+   con prisa, un subrayado no basta.
+
+   El modo "sin existencias" usa ámbar y no teal. No es
+   decorativo: significa que nada de lo que se ve tiene stock,
+   y el ingeniero debe saberlo antes de leer un solo código.
+   ============================================================ */
 
 .pestanas-modo {
   display: flex;
-  gap: 4px;
-  margin: 14px 0 10px;
-  border-bottom: 1px solid #DDD;
+  gap: 6px;
+  margin: 14px 0 12px;
+  padding: 4px;
+  background: var(--papel);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
 }
 
 .pestana-modo {
   flex: 1;
+  min-height: 42px;
   padding: 9px 10px;
-  font-size: 14px;
   font-family: inherit;
-  color: #6D6D6D;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--tinta-suave);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
   cursor: pointer;
 }
 
-.pestana-modo:hover:not(:disabled) {
-  color: #1A1A1A;
+.pestana-modo:hover:not(:disabled):not(.activa) {
+  color: var(--tinta);
+  background: var(--superficie);
+  border-color: var(--borde);
 }
 
+/* ---- Activa: modo normal ---- */
 .pestana-modo.activa {
-  color: #1A1A1A;
-  font-weight: 600;
-  border-bottom-color: #1A1A1A;
+  color: #fff;
+  background: var(--acento);
+  border-color: var(--acento);
+  border-bottom: 3px solid var(--lima);
+  box-shadow: 0 1px 4px rgba(0,0,0,.18);
+}
+
+/* ---- Activa: modo sin existencias ---- */
+.pestana-modo.activa[data-modo="sin_stock"] {
+  background: var(--alerta);
+  border-color: var(--alerta);
+  border-bottom-color: var(--lima);
 }
 
 .pestana-modo:disabled {
   cursor: default;
-  opacity: 0.6;
+  opacity: .6;
 }
 
+.pestana-modo:focus-visible {
+  outline: 2px solid var(--tinta);
+  outline-offset: 2px;
+}
+
+/* ---- Nota explicativa del modo sin existencias ---- */
 .nota-sin-stock {
   margin: 0 0 12px;
-  padding: 9px 11px;
+  padding: 10px 13px;
   font-size: 13px;
   line-height: 1.45;
-  color: #6D6D6D;
-  background: #F5F5F3;
-  border-radius: 6px;
+  color: var(--alerta);
+  background: #fdf5ee;
+  border-left: 3px solid var(--alerta);
+  border-radius: var(--radio);
 }
