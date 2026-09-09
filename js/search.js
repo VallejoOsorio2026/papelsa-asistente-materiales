@@ -233,6 +233,8 @@ function pintarItem(item, abrir) {
   }
   html += '</div>';
 
+  html += pintarPestanas(item);
+
   if (item.sinInventario) {
     html += '<div class="aviso aviso-error visible">'
           + escapar(item.mensaje) + '</div></div></div>';
@@ -379,3 +381,85 @@ function pintarCandidato(c, orden, elegido, almacenElegido) {
   html += '</div>';
   return html;
 }
+
+
+// ------------------------------------------------------------
+// pintarPestanas()
+// Dos vistas del MISMO texto buscado, por item.
+// La primera es la busqueda de siempre, sin cambios: no oculta
+// nada. La segunda deja competir solo a los codigos en cero,
+// que en la primera quedan enterrados bajo los que si tienen
+// stock.
+// ------------------------------------------------------------
+function pintarPestanas(item) {
+
+  const modo = item.modo || 'disponibles';
+
+  let html = '<div class="pestanas-modo" data-orden="' + item.orden + '">';
+
+  html += '<button class="pestana-modo'
+        + (modo === 'disponibles' ? ' activa' : '') + '" '
+        + 'data-orden="' + item.orden + '" '
+        + 'data-modo="disponibles">Disponibles primero</button>';
+
+  html += '<button class="pestana-modo'
+        + (modo === 'sin_stock' ? ' activa' : '') + '" '
+        + 'data-orden="' + item.orden + '" '
+        + 'data-modo="sin_stock">Sin existencias</button>';
+
+  html += '</div>';
+
+  if (modo === 'sin_stock') {
+    html += '<p class="nota-sin-stock">Estos códigos existen en SAP '
+          + 'pero no tienen unidades disponibles. Elígelos para dejar '
+          + 'el material pedido.</p>';
+  }
+
+  return html;
+}
+
+
+// ------------------------------------------------------------
+// repintarItem()
+// Redibuja UN solo item, sin tocar los demas: lo ya elegido en
+// otros materiales no se pierde.
+// ------------------------------------------------------------
+function repintarItem(orden) {
+
+  const cuerpo = document.getElementById('cuerpo-' + orden);
+  if (!cuerpo) return;
+
+  const item = solicitudActual.items.find(function (i) {
+    return i.orden === orden;
+  });
+  if (!item) return;
+
+  cuerpo.parentNode.outerHTML = pintarItem(item, true);
+}
+
+
+// ------------------------------------------------------------
+// Clic en las pestanas.
+// Se escucha en el documento y no en el boton: los resultados
+// se redibujan constantemente y un manejador atado al boton
+// desapareceria con el.
+// ------------------------------------------------------------
+document.addEventListener('click', async function (ev) {
+
+  const boton = ev.target.closest
+    ? ev.target.closest('.pestana-modo')
+    : null;
+  if (!boton) return;
+
+  const orden = Number(boton.dataset.orden);
+  const modo  = boton.dataset.modo;
+
+  const grupo = boton.parentNode;
+  grupo.querySelectorAll('.pestana-modo').forEach(function (b) {
+    b.disabled = true;
+  });
+  boton.textContent = 'Buscando…';
+
+  await cambiarModoItem(orden, modo);
+  repintarItem(orden);
+});
