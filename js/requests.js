@@ -197,7 +197,7 @@ async function ampliarItem(orden) {
   if (!item) return;
 
   const nuevoLimite = Math.min(item.limite + 5, 15);
-  const respuesta = await buscar(item.texto, nuevoLimite);
+  const respuesta = await buscar(item.texto, nuevoLimite, item.modo);
 
   item.candidatos = respuesta.resultados || [];
   item.limite     = nuevoLimite;
@@ -271,6 +271,8 @@ async function rebuscarItem(orden, textoNuevo) {
   item.limite          = 5;
   item.elegido         = null;
   item.reformulado     = true;
+  item.modo            = 'disponibles';
+  item.cache           = {};
 
   item.idBusqueda = await registrarBusquedaFallida(
     texto, respuesta.nivel, candidatos.length
@@ -333,4 +335,52 @@ async function agregarItem(texto) {
   // El mensaje original se amplia: la trazabilidad debe
   // reflejar todo lo que se pidio, no solo la primera frase.
   solicitudActual.mensajeOriginal += ' · ' + limpio;
+}
+
+
+// ------------------------------------------------------------
+// cambiarModoItem()
+// Alterna un item entre la busqueda normal y la de codigos sin
+// existencias. Solo afecta a ESE item.
+//
+// Lo ya visto se guarda en cache: volver a la otra pestaña no
+// vuelve a consultar la base ni pierde lo mostrado.
+// ------------------------------------------------------------
+async function cambiarModoItem(orden, modo) {
+
+  const item = solicitudActual.items.find(function (i) {
+    return i.orden === orden;
+  });
+  if (!item) return;
+
+  const actual = item.modo || 'disponibles';
+  if (actual === modo) return;
+
+  item.cache = item.cache || {};
+  item.cache[actual] = {
+    candidatos: item.candidatos,
+    nivel:      item.nivel,
+    mensaje:    item.mensaje,
+    hayMas:     item.hayMas,
+    limite:     item.limite
+  };
+
+  if (item.cache[modo]) {
+    const g = item.cache[modo];
+    item.candidatos = g.candidatos;
+    item.nivel      = g.nivel;
+    item.mensaje    = g.mensaje;
+    item.hayMas     = g.hayMas;
+    item.limite     = g.limite;
+  } else {
+    const r = await buscar(item.texto, 5, modo);
+    item.candidatos    = r.resultados || [];
+    item.nivel         = r.nivel;
+    item.mensaje       = r.mensaje;
+    item.hayMas        = r.hay_mas === true;
+    item.limite        = 5;
+    item.sinInventario = r.sin_inventario === true;
+  }
+
+  item.modo = modo;
 }
