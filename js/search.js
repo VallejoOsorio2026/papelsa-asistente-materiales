@@ -12,13 +12,20 @@
 // p_desde permite ampliar sin perder los resultados que ya
 // se mostraron.
 // ------------------------------------------------------------
-async function buscar(consulta, limite) {
+async function buscar(consulta, limite, modo) {
 
-  const { data, error } = await db.rpc('consultar_materiales', {
-    p_consulta: consulta,
-    p_limite: limite || 5,
-    p_desde: 0
-  });
+  const sinStock = (modo === 'sin_stock');
+
+  const { data, error } = sinStock
+    ? await db.rpc('consultar_sin_existencias', {
+        p_consulta: consulta,
+        p_limite: limite || 5
+      })
+    : await db.rpc('consultar_materiales', {
+        p_consulta: consulta,
+        p_limite: limite || 5,
+        p_desde: 0
+      });
 
   if (error) {
     return {
