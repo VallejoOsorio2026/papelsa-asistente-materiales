@@ -7,6 +7,11 @@
 -- ⚠️ ARCHIVO ACTUALIZADO 24-08-2026 con la correccion de
 -- ADR-002. La version anterior versionada estaba desfasada.
 --
+-- ⚠️ ARCHIVO ACTUALIZADO 10-09-2026 con ADR-023: el inventario
+-- pasa de 21 a 10 columnas de SAP. El cambio de estructura
+-- vive en sql/029_recorte_columnas.sql; aqui solo se actualiza
+-- la funcion que inserta.
+--
 -- RN-013: la version anterior permanece activa hasta validar
 -- la nueva. Carga fallida = el sistema sigue con la ultima
 -- version valida. Nunca se queda operando a medias.
@@ -18,6 +23,10 @@
 -- ADR-002: se conservan como maximo DOS versiones completas
 -- (activa y anterior). De las demas solo el registro de
 -- auditoria, sin filas.
+--
+-- Este archivo contiene UNICAMENTE funciones con CREATE OR
+-- REPLACE, asi que se puede reejecutar entero cuantas veces
+-- haga falta: no toca datos ni estructura.
 -- ============================================================
 
 
@@ -299,9 +308,9 @@ $function$;
 
 -- ------------------------------------------------------------
 -- cargar_lote_inventario()
--- Inserta un lote de filas (500 por defecto, ADR-005). No se
--- hacen 65.883 peticiones individuales: seria inviable desde
--- un navegador.
+-- Inserta un lote de filas (500 por defecto). No se hacen
+-- 65.883 peticiones individuales: seria inviable desde un
+-- navegador.
 --
 -- Solo admite cargas en estado 'preparando': impide inyectar
 -- filas en la version activa, que es inmutable (RN-011,
@@ -315,9 +324,17 @@ $function$;
 -- clave anterior — solo material — la carga completa se
 -- quedaba en 46.212 de 65.883 filas.
 --
--- Se cargan 21 columnas, no 28 (ADR-005): se excluyen precios,
--- consumos y valores para reducir la sensibilidad de la
--- informacion alojada fuera de la organizacion.
+-- ADR-023 (sustituye a ADR-005): se cargan 10 columnas, no 21
+-- ni 28. Salen precios, consumos y valores por sensibilidad, y
+-- salen ademas once columnas que ninguna funcion, consulta o
+-- pantalla leia nunca. XCentro entre ellas, por ADR-009.
+-- El cambio de estructura vive en sql/029_recorte_columnas.sql.
+--
+-- PENDIENTE-017: un 17% de las filas trae Ubicacion vacia. Se
+-- guarda como NULL. NO se rellena con el valor de la fila
+-- anterior mientras no se confirme si el reporte suprime
+-- repetidos: una ubicacion inventada mandaria al ingeniero a
+-- un estante equivocado, y eso es peor que no decir nada.
 -- ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.cargar_lote_inventario(
   p_version_id uuid,
@@ -352,11 +369,8 @@ begin
     version_id,
     material, texto_breve_material,
     stock_libre_utilizacion, stock_consignacion, stock_proyectos,
-    xcentro, maximo, minimo,
     centro, almacen, ubicacion, unidad_medida_base,
-    planif_necesidades, grupo_compra, tipo_material, grupo_articulo,
-    clase_valoracion, cat_val_stock_proyecto,
-    caract_planif_nec, tam_lote_planif_nec, material_antiguo,
+    material_antiguo,
     texto_normalizado, material_antiguo_norm, ambito_ubicacion
   )
   select
@@ -366,21 +380,11 @@ begin
     public.convertir_numero(f->>'stock_libre_utilizacion', f->>'unidad_medida_base'),
     public.convertir_numero(f->>'stock_consignacion',      f->>'unidad_medida_base'),
     public.convertir_numero(f->>'stock_proyectos',         f->>'unidad_medida_base'),
-    public.convertir_numero(f->>'xcentro'),
-    public.convertir_numero(f->>'maximo', f->>'unidad_medida_base'),
-    public.convertir_numero(f->>'minimo', f->>'unidad_medida_base'),
     trim(f->>'centro'),
     trim(f->>'almacen'),
+    -- PENDIENTE-017: blanco = NULL, no se rellena por conjetura
     nullif(trim(coalesce(f->>'ubicacion','')), ''),
     trim(f->>'unidad_medida_base'),
-    nullif(trim(coalesce(f->>'planif_necesidades','')), ''),
-    nullif(trim(coalesce(f->>'grupo_compra','')), ''),
-    nullif(trim(coalesce(f->>'tipo_material','')), ''),
-    nullif(trim(coalesce(f->>'grupo_articulo','')), ''),
-    nullif(trim(coalesce(f->>'clase_valoracion','')), ''),
-    nullif(trim(coalesce(f->>'cat_val_stock_proyecto','')), ''),
-    nullif(trim(coalesce(f->>'caract_planif_nec','')), ''),
-    nullif(trim(coalesce(f->>'tam_lote_planif_nec','')), ''),
     public.limpiar_material_antiguo(f->>'material_antiguo'),
 
     public.normalizar_texto(f->>'texto_breve_material'),
@@ -400,4 +404,3 @@ begin
   return v_insertadas;
 end;
 $function$;
-
