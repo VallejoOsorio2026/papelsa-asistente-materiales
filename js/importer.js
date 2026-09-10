@@ -11,28 +11,35 @@
 // RN-013: la version activa sigue respondiendo consultas
 // durante toda la carga. Solo se conmuta al validar.
 //
-// ⚠️ ACTUALIZADO 10-09-2026 — ADR-023.
+// ⚠️ ACTUALIZADO 10-09-2026 — ADR-023 y salida cruda de SAP.
 //
-// Dos cambios respecto a la version anterior:
+// Cuatro cambios respecto a la version de agosto:
 //
-// 1. Se envian 10 columnas en lugar de 21. Las once eliminadas
-//    no las leia ninguna funcion ni pantalla.
+// 1. Se envian 10 columnas en lugar de 21 (ADR-023).
 //
 // 2. Los encabezados se buscan POR NOMBRE, no por posicion.
-//    Motivo: SAP renombro cuatro columnas sin cambiar su
-//    significado y la validacion por posicion habria rechazado
-//    la carga entera. El orden dejo de importar; lo que importa
-//    es que las 10 columnas esten. Asi el mismo importador
-//    acepta el archivo de 28 columnas de hoy y el de 10 que
-//    producira el script automatizado.
+//    La salida cruda de SAP usa abreviaturas (Ce., Alm., UMB)
+//    y otro orden: los stocks pasaron de las posiciones 3-4-5
+//    a la 16-17-18. La validacion por posicion no habria
+//    acertado ni una columna.
+//
+// 3. Se detecta la codificacion. El archivo de SAP viene en
+//    Windows-1252, no en UTF-8. Leerlo mal no solo rompe los
+//    titulos: corrompe cada descripcion con tilde, y como
+//    texto_normalizado se calcula a partir de ellas, el motor
+//    de busqueda queda envenenado en silencio.
+//
+// 4. La fila de titulos se busca; no se supone que sea la
+//    primera. El reporte puede traer lineas de cabecera.
 // ============================================================
 
 
 // ------------------------------------------------------------
 // COLUMNAS
 // Para cada campo de la base, los nombres que puede traer el
-// archivo. El primero es el vigente; los siguientes son
-// historicos, para poder recargar archivos antiguos.
+// archivo. El primero es el de la salida cruda de SAP; los
+// siguientes son historicos, para poder recargar archivos
+// antiguos preparados a mano.
 // ------------------------------------------------------------
 const COLUMNAS = [
   { campo: 'material',
@@ -42,35 +49,67 @@ const COLUMNAS = [
     nombres: ['Texto breve de material', 'Texto breve material'] },
 
   { campo: 'stock_libre_utilizacion',
-    nombres: ['Stock Libre_Utilizacion', 'Stock Libre Utilizacion'] },
+    nombres: ['S.Lib-Ut', 'Stock Libre_Utilizacion', 'stock Libre_Utilizacion'] },
 
   { campo: 'stock_consignacion',
-    nombres: ['Stock consignación'] },
+    nombres: ['Stock cons', 'Stock consignación'] },
 
   { campo: 'stock_proyectos',
-    nombres: ['Stock Proyectos'] },
+    nombres: ['St. Proy', 'Stock Proyectos'] },
 
   { campo: 'centro',
-    nombres: ['Centro'] },
+    nombres: ['Ce.', 'Centro'] },
 
   { campo: 'almacen',
-    nombres: ['Almacén'] },
+    nombres: ['Alm.', 'Almacén'] },
 
   { campo: 'ubicacion',
-    nombres: ['Ubicación'] },
+    nombres: ['Ubic.', 'Ubicación'] },
 
   { campo: 'unidad_medida_base',
-    nombres: ['Unidad medida base'] },
+    nombres: ['UMB', 'Unidad medida base'] },
 
   { campo: 'material_antiguo',
     nombres: ['Nºmaterial antiguo', 'No.material antiguo'] }
 ];
 
 // 500 filas por lote. Con 10 columnas en vez de 21 el peso
-// enviado se reduce casi a la mitad, asi que subirlo a 1000
-// seria viable. NO se sube todavia: cambiar dos cosas a la vez
-// impide saber cual fallo si algo falla.
+// enviado se reduce casi a la mitad, asi que subirlo seria
+// viable. NO se sube todavia: cambiar dos cosas a la vez impide
+// saber cual fallo si algo falla.
 const TAMANO_LOTE = 500;
+
+
+// ------------------------------------------------------------
+// leerTexto()
+// Decide la codificacion en lugar de suponerla.
+//
+// Con fatal:true, el decodificador de UTF-8 lanza error ante un
+// byte invalido en vez de sustituirlo por el simbolo de
+// interrogacion. Ese error es la senal de que el archivo no es
+// UTF-8, y se reintenta con Windows-1252, que es lo que produce
+// Excel en espanol por defecto.
+//
+// Importa mas de lo que parece: una tilde mal leida corrompe la
+// descripcion, y de la descripcion sale texto_normalizado, que
+// es sobre lo que busca el motor.
+// ------------------------------------------------------------
+async function leerTexto(archivo) {
+
+  const bytes = await archivo.arrayBuffer();
+
+  try {
+    return {
+      texto: new TextDecoder('utf-8', { fatal: true }).decode(bytes),
+      codificacion: 'UTF-8'
+    };
+  } catch (e) {
+    return {
+      texto: new TextDecoder('windows-1252').decode(bytes),
+      codificacion: 'Windows-1252'
+    };
+  }
+}
 
 
 // ------------------------------------------------------------
@@ -79,10 +118,15 @@ const TAMANO_LOTE = 500;
 // tumben una carga de 65.883 filas. Quita la marca invisible
 // que Excel pone al principio del archivo (BOM), las tildes,
 // las mayusculas y los espacios repetidos.
+//
+// Tambien quita el simbolo de grado y el de sustitucion: asi
+// "Nºmaterial antiguo" sigue reconociendose aunque el archivo
+// llegue con ese caracter estropeado.
 // ------------------------------------------------------------
 function normalizarEncabezado(texto) {
   return String(texto || '')
     .replace(/^\uFEFF/, '')
+    .replace(/[\uFFFD°º]/g, '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -94,18 +138,23 @@ function normalizarEncabezado(texto) {
 // ------------------------------------------------------------
 // detectarSeparador()
 // Excel usa coma o punto y coma segun la configuracion regional
-// del equipo. Se decide contando cual aparece mas en la linea
-// de encabezados.
+// del equipo, y SAP a veces entrega tabulador.
+//
+// Se cuentan las 20 primeras lineas, no solo la primera: si el
+// archivo empieza con una linea de cabecera sin separadores, se
+// elegiria mal y no se partiria ninguna columna.
 // ------------------------------------------------------------
 function detectarSeparador(texto) {
 
-  const primeraLinea = texto.split('\n')[0];
+  const lineas = texto.split('\n').slice(0, 20).join('\n');
 
-  const comas = (primeraLinea.match(/,/g) || []).length;
-  const puntoYComa = (primeraLinea.match(/;/g) || []).length;
-  const tabuladores = (primeraLinea.match(/\t/g) || []).length;
+  const comas       = (lineas.match(/,/g)  || []).length;
+  const puntoYComa  = (lineas.match(/;/g)  || []).length;
+  const tabuladores = (lineas.match(/\t/g) || []).length;
 
-  if (tabuladores > comas && tabuladores > puntoYComa) return '\t';
+  if (tabuladores >= comas && tabuladores >= puntoYComa && tabuladores > 0) {
+    return '\t';
+  }
   if (puntoYComa > comas) return ';';
   return ',';
 }
@@ -161,16 +210,12 @@ function leerCSV(texto) {
 // ubicarColumnas()
 // RN-012 (revisada por ADR-023): las 10 columnas deben ESTAR.
 // El orden ya no importa y las sobrantes se ignoran.
-//
-// Si falta alguna, la carga se rechaza entera y el mensaje dice
-// cuales faltan y que titulos llegaron, para poder compararlos
-// sin abrir el archivo.
 // ------------------------------------------------------------
 function ubicarColumnas(filaEncabezados) {
 
   const leidos = filaEncabezados.map(normalizarEncabezado);
 
-  const indices  = {};
+  const indices   = {};
   const faltantes = [];
   const repetidas = [];
 
@@ -178,7 +223,6 @@ function ubicarColumnas(filaEncabezados) {
 
     const buscados = col.nombres.map(normalizarEncabezado);
 
-    // Todas las posiciones que coinciden con algun nombre valido
     const encontradas = [];
     leidos.forEach(function (titulo, i) {
       if (titulo !== '' && buscados.indexOf(titulo) !== -1) {
@@ -200,8 +244,7 @@ function ubicarColumnas(filaEncabezados) {
     return {
       ok: false,
       mensaje: 'El archivo trae repetida la columna: '
-             + repetidas.join(', ')
-             + '. No se puede saber cual usar.'
+             + repetidas.join(', ') + '. No se puede saber cuál usar.'
     };
   }
 
@@ -210,8 +253,6 @@ function ubicarColumnas(filaEncabezados) {
       ok: false,
       mensaje: 'Faltan ' + faltantes.length + ' columnas obligatorias: '
              + faltantes.join(' · ')
-             + '. El archivo trae estos titulos: '
-             + filaEncabezados.join(' | ')
     };
   }
 
@@ -219,6 +260,44 @@ function ubicarColumnas(filaEncabezados) {
     ok: true,
     indices: indices,
     sobrantes: filaEncabezados.length - COLUMNAS.length
+  };
+}
+
+
+// ------------------------------------------------------------
+// localizarEncabezados()
+// El reporte puede traer lineas de cabecera antes de la tabla.
+// Se prueban las 20 primeras y se usa la primera donde aparezcan
+// las 10 columnas. Lo anterior se descarta.
+//
+// Si ninguna sirve, el mensaje incluye las cinco primeras filas
+// tal como se leyeron: sin eso hay que abrir el Bloc de notas
+// para saber que llego, y eso es tiempo perdido cada vez.
+// ------------------------------------------------------------
+function localizarEncabezados(filas) {
+
+  const tope = Math.min(20, filas.length);
+
+  for (let i = 0; i < tope; i++) {
+    const intento = ubicarColumnas(filas[i]);
+    if (intento.ok) {
+      intento.filaEncabezados = i;
+      return intento;
+    }
+  }
+
+  const fallo = ubicarColumnas(filas[0]);
+
+  let muestra = '';
+  for (let i = 0; i < Math.min(5, filas.length); i++) {
+    muestra += '\n[fila ' + (i + 1) + '] ' + filas[i].join(' | ');
+  }
+
+  return {
+    ok: false,
+    mensaje: fallo.mensaje
+           + '\n\nSe revisaron las ' + tope + ' primeras filas sin encontrar '
+           + 'los títulos. Principio del archivo:' + muestra
   };
 }
 
@@ -257,9 +336,8 @@ function diagnosticoUbicacion(datos, indice) {
       if (anterior !== null && valor === anterior) {
         repetidasSeguidas++;
       }
+      anterior = valor;
     }
-
-    anterior = (valor === '') ? anterior : valor;
   });
 
   return {
@@ -285,24 +363,30 @@ async function importarInventario(archivo, informar) {
 
   informar('Leyendo el archivo…');
 
-  const texto = await archivo.text();
-  const filas = leerCSV(texto);
+  const lectura = await leerTexto(archivo);
+  const filas   = leerCSV(lectura.texto);
+
+  console.log('Codificación detectada: ' + lectura.codificacion);
 
   if (filas.length < 2) {
     return { ok: false, mensaje: 'El archivo no contiene datos.' };
   }
 
-  const mapa = ubicarColumnas(filas[0]);
+  const mapa = localizarEncabezados(filas);
   if (!mapa.ok) {
     return { ok: false, mensaje: mapa.mensaje };
   }
 
-  const datos = filas.slice(1);
+  // Todo lo anterior a la fila de titulos se descarta
+  const datos = filas.slice(mapa.filaEncabezados + 1);
 
   informar('Archivo válido: ' + datos.length.toLocaleString('es-CO') + ' filas · '
-         + '10 columnas localizadas'
+         + lectura.codificacion
+         + (mapa.filaEncabezados > 0
+              ? ' · ' + mapa.filaEncabezados + ' línea(s) de cabecera descartadas'
+              : '')
          + (mapa.sobrantes > 0
-              ? ' · ' + mapa.sobrantes + ' columnas sobrantes ignoradas'
+              ? ' · ' + mapa.sobrantes + ' columnas ignoradas'
               : ''));
 
   // PENDIENTE-017: se mide antes de enviar nada
@@ -363,8 +447,6 @@ async function importarInventario(archivo, informar) {
     return { ok: false, mensaje: 'Error al activar: ' + errorActivar.message };
   }
 
-  // El diagnostico viaja en el mensaje final para que quede a la
-  // vista sin tener que abrir la consola
   if (resultado && resultado.ok) {
     resultado.mensaje = resultado.mensaje + ' · ' + diag.texto;
   }
