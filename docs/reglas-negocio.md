@@ -33,10 +33,33 @@ de la base de datos, no en este repositorio.
 
 - **RN-011** — Los datos provenientes de SAP son inmutables. La normalización se guarda
   en columnas auxiliares; el texto original nunca se sobrescribe.
-- **RN-012** — Toda carga valida la presencia y el orden exacto de **21 encabezados**
-  (ADR-005), la existencia de la columna clave, la unicidad de códigos y la cantidad
-  de registros. Si algo falla, la carga se rechaza completa. El separador del archivo
-  se detecta automáticamente: coma, punto y coma o tabulador.
+- **RN-012** — **Validación de la carga.** Toda carga verifica que estén presentes
+  las **10 columnas** requeridas (ADR-025), la existencia de la columna clave, la
+  unicidad de códigos según RN-033 y la cantidad de registros. Si algo falla, la
+  carga se rechaza completa.
+
+  **Las columnas se localizan por nombre, no por posición** (revisado el
+  2026-09-10). La validación anterior exigía orden exacto y demostró proteger lo
+  que no debía: SAP renombró cuatro encabezados sin alterar su significado y la
+  carga entera habría sido rechazada por la ortografía de unos títulos. La salida
+  cruda del reporte, además, usa abreviaturas (`Ce.`, `Alm.`, `UMB`, `S.Lib-Ut`)
+  y otro orden: los stocks pasaron de las posiciones 3-4-5 a la 16-17-18.
+
+  El importador acepta nombres alternativos para cada columna, ignora mayúsculas,
+  tildes y espacios repetidos, descarta las columnas sobrantes y localiza la fila
+  de títulos aunque el reporte traiga líneas de cabecera. Sigue siendo motivo de
+  rechazo que **falte** una de las diez, o que una llegue duplicada.
+
+  El separador se detecta automáticamente —coma, punto y coma o tabulador— y la
+  codificación también: si el archivo no es UTF-8 válido se lee como Windows-1252,
+  que es lo que produce Excel en español. Esto no es cosmético: una tilde mal leída
+  corrompe la descripción, y de la descripción sale `texto_normalizado`, que es
+  sobre lo que busca el motor.
+
+  **Lo que RN-012 no puede validar:** que el archivo esté completo. Comprueba que
+  se carguen todas las filas *del archivo*, no que el archivo contenga todo el
+  catálogo. Una exportación filtrada de menos pasa la validación y se activa
+  (PENDIENTE-019).
 - **RN-013** — La versión de datos anterior permanece activa hasta que la nueva se valida
   por completo. Ante una carga fallida, el sistema sigue operando con la última versión
   válida. Nunca opera con una actualización parcial.
@@ -93,7 +116,7 @@ de la base de datos, no en este repositorio.
 
 - **RN-030** — **Clasificación de disponibilidad.** Sustituye a RN-020.
 
-  **Disponible:** `stock Libre_Utilización` + `Stock consignación`. Ambos están
+  **Disponible:** `Stock Libre_Utilizacion` + `Stock consignación`. Ambos están
   físicamente en planta y el ingeniero puede disponer de ellos.
 
   **Comprometido:** `Stock Proyectos`. Existe físicamente, pero ya está asignado
