@@ -11,6 +11,7 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | PENDIENTE-013 | Verificar la equivalencia «aisi = varilla roscada» antes de integrarla al diccionario. AISI es un instituto de normas de acero (AISI 304, AISI 1045), no un tipo de pieza. Integrarla sin comprobar contaminaría la búsqueda de aceros. | Abierto | Confirmación del responsable |
 | PENDIENTE-015 | El dominio `elsa-ai.link` está registrado a título personal y es hoy una dependencia del sistema: si caduca, los avisos dejan de enviarse sin aviso previo. Anotar la fecha de renovación y decidir si el proyecto crece hacia un dominio institucional. | Abierto | Renovación anual |
 | PENDIENTE-016 | La abreviatura `AC` se pierde por longitud. `extraer_palabras()` descarta lo de menos de tres letras, así que en «AC Rsc» la búsqueda efectiva es solo `rsc` y el material correcto cae al puesto 7. La expansión de sinónimos añade `acero`, que no coincide porque el inventario escribe `AC`. **No corregir bajando el mínimo a dos letras sin medir**: metería `de`, `mm`, `un` y decenas de fragmentos en todas las búsquedas del catálogo. Alternativa a evaluar: permitir palabras de dos letras solo si están en el diccionario de abreviaturas. | Abierto | Banco de pruebas |
+| PENDIENTE-019 | La exportación del 2026-09-10 salió sin el centro P210 (Bogotá): 11.505 filas menos, confirmado por conteo — los otros tres centros crecieron con normalidad. Se decidió mantener activa esa versión: los stocks de planta al día pesan más que la ausencia de una sede remota, y un dato desactualizado engaña más que uno ausente. **Consecuencia mientras siga abierto: un material que solo exista en Bogotá devuelve «no encontrado»**, en contra de RN-019. Se resuelve incluyendo P210 en la pantalla de selección de ZIAA al grabar el macro. | Abierto | Automatización de la extracción |
 
 ## Cerrados
 
@@ -26,6 +27,7 @@ Ninguno se cierra sin confirmación explícita del responsable del proyecto.
 | PENDIENTE-012 | Ratificar el alcance ampliado a contratistas | 2026-08-26 | Autorizado. Se confirmó el acceso de personal externo al catálogo técnico, en las mismas condiciones del piloto: solo lectura, sin costos ni consumos |
 | PENDIENTE-014 | Paso a producción de las cuentas de solicitante | 2026-08-26 | Hecho. `Mecánicos Molino` y `FAISMON` pasaron al área `mantenimiento`. Verificado con envío controlado a los tres ingenieros, avisados previamente para que el remitente no cayera en spam |
 | PENDIENTE-017 | Prefiltro de búsqueda (`LIMIT 600`) cortaba sin orden: con más de 600 candidatos, Postgres descartaba dos tercios al azar. | 2026-08-31 | Corregido: orden por conteo de coincidencias (refs, medidas, palabras). Validado: retenedor 110x142x15 → puesto 1 de 1.884; AC Rsc → puesto 42 de 4.231. Ambos sobreviven el corte; lo pendiente en cada uno es otro problema (vocabulario, PENDIENTE-016) |
+| PENDIENTE-018 | Blancos en la columna `Ubicación`: ¿vacíos legítimos o supresión de repetidos en el reporte? | 2026-09-10 | **Vacíos legítimos.** El importador midió las repeticiones consecutivas del mismo valor: 13.615. La supresión tiene una firma inconfundible —un valor nunca aparece dos veces seguidas— y no se cumple. La proporción real es del 2,3 % (1.268 de 54.494), no del 17 % estimado: aquel cálculo en la hoja medía dónde terminaba el archivo, no cuántas celdas estaban vacías. Guardar el blanco como NULL es correcto y **no debe rellenarse hacia abajo**: una ubicación heredada de otro almacén mandaría al ingeniero a un estante equivocado |
 
 ## Incidencias conocidas
 
@@ -56,7 +58,8 @@ No implementar si ponen en riesgo el piloto.
 8. Modelo de lenguaje optimizado
 9. Nuevos canales de consulta
 10. Administración corporativa de usuarios y roles
-11. Reincorporación de columnas de costo y consumo (excluidas por ADR-005)
+11. 11. Reincorporación de columnas de costo y consumo (excluidas por ADR-005,
+    hoy sustituido por ADR-025)
 12. Recuperación de la columna de fecha de creación como criterio de desempate
 13. Agente evaluador automático: un agente que use la aplicación publicada,
     ejecute el banco de pruebas y califique los resultados (nivel de confianza
@@ -85,3 +88,7 @@ No implementar si ponen en riesgo el piloto.
     un mecánico llega a mantenimiento y se deriva a mano. Decisión tomada a
     conciencia: obliga menos al mecánico, que no debería clasificar el
     material antes de buscarlo
+    20. Reincorporar `Tipo Material` y `Grupo Articulo` si se aborda un filtro
+    por familia de material en el ranking (excluidas por ADR-025)
+21. Uso de la columna `Ubicación` para funciones específicas del área de
+    Almacén
