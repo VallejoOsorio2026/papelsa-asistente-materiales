@@ -62,27 +62,18 @@ create table public.inventario_materiales (
   id                        bigint generated always as identity primary key,
   version_id                uuid not null references public.versiones_datos(id) on delete cascade,
 
-  -- ---------- 21 columnas originales de SAP ----------
+  -- ---------- 10 columnas originales de SAP (ADR-023) ----------
+  -- Se redujo desde 21. Las 11 eliminadas no las leia nadie.
+  -- Historico del cambio en sql/029_recorte_columnas.sql
   material                  text not null,
   texto_breve_material      text,
   stock_libre_utilizacion   numeric,
   stock_consignacion        numeric,
   stock_proyectos           numeric,
-  xcentro                   text,
-  maximo                    numeric,
-  minimo                    numeric,
   centro                    text,
   almacen                   text,
   ubicacion                 text,
   unidad_medida_base        text,
-  planif_necesidades        text,
-  grupo_compra              text,
-  tipo_material             text,
-  grupo_articulo            text,
-  clase_valoracion          text,
-  cat_val_stock_proyecto    text,
-  caract_planif_nec         text,
-  tam_lote_planif_nec       text,
   material_antiguo          text,
 
   -- ---------- auxiliares generadas por el sistema ----------
@@ -97,8 +88,8 @@ create table public.inventario_materiales (
 
 comment on table public.inventario_materiales is
   'Inventario SAP. Columnas originales inmutables; las auxiliares se derivan al cargar.';
-comment on column public.inventario_materiales.xcentro is
-  'PENDIENTE-001: semantica por confirmar con datos reales.';
+comment on column public.inventario_materiales.ubicacion is
+  'PENDIENTE-017: blancos pendientes de aclarar. Se guardan como NULL.
 
 
 -- ############################################################
