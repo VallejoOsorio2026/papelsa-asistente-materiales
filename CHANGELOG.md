@@ -10,30 +10,92 @@ Formato de versión: `vMAYOR.MENOR.PARCHE`
 
 ## [No publicado]
 
-### Corregido
-- Tres funciones que corrían en Supabase sin reflejarse en `sql/`
-  (`extraer_medidas`, `enviar_solicitud_materiales`, `cuerpo_correo_solicitud`)
-  y la restricción de `orden_trabajo` opcional, quedan versionadas
-- **Prefiltro de `buscar_materiales()` sin orden.** El `LIMIT 600` cortaba
-  sin `ORDER BY`: con más de 600 candidatos, Postgres descartaba dos tercios
-  al azar (medido: 1.884 candidatos para `retenedor 110x142x15 MM`). Ahora
-  ordena por conteo de coincidencias (referencias, medidas, palabras) antes
-  de cortar, no por similitud de cadena completa, que penalizaba
-  descripciones largas. Validado: `retenedor 110x142x15` → puesto 1 de
-  1.884; `AC Rsc` → puesto 42 de 4.231. Ambos sobreviven el corte; lo que
-  falta en cada uno es otro pendiente ya documentado (vocabulario,
-  PENDIENTE-016)
-
 ### En construcción
 - Banco de pruebas y medición objetiva del motor
 - Pantalla de administración de sinónimos sugeridos
-
-### En construcción
-- Banco de pruebas y medición objetiva del motor
-- Pantalla de administración de sinónimos sugeridos
+- Automatización de la extracción desde SAP
 
 ---
 
+## [v1.3.0] — 2026-09-10
+
+La extracción manual de ~48 minutos va a sustituirse por un guion
+automatizado que correrá tres veces al día. Al preparar ese cambio se
+auditó qué columnas usa realmente el sistema, y once de las veintiuna no
+las lee nadie.
+
+### Cambiado
+- **El inventario pasa de 21 a 10 columnas de SAP** (ADR-025, sustituye a
+  ADR-005). Once columnas no las leía ninguna función, consulta ni
+  pantalla: se cargaban 65.883 veces por versión para no usarse nunca. El
+  motivo principal no es el disco, que ronda los 3-6 MB por versión, sino
+  el peso de cada lote enviado desde el navegador — se reduce a casi la
+  mitad, de cara a la carga tres veces al día
+- **Los encabezados se localizan por nombre, no por posición** (RN-012
+  revisada). SAP renombró cuatro columnas sin cambiar su significado y la
+  validación estricta habría rechazado la carga entera por la ortografía
+  de unos títulos
+
+### Añadido
+- Lectura de la **salida cruda de SAP**, con sus abreviaturas (`Ce.`,
+  `Alm.`, `Ubic.`, `UMB`, `S.Lib-Ut`, `Stock cons`, `St. Proy`) y su orden
+  propio: los stocks pasaron de las posiciones 3-4-5 a la 16-17-18. Los
+  nombres antiguos siguen aceptándose como alias, así que un archivo de
+  agosto también carga
+- **Detección de codificación.** El reporte llega en Windows-1252, no en
+  UTF-8. Leerlo mal no solo rompe los títulos: corrompe cada descripción
+  con tilde, y de la descripción sale `texto_normalizado`. La búsqueda
+  habría quedado envenenada sin que nada avisara
+- Localización de la fila de títulos aunque el reporte traiga líneas de
+  cabecera por encima
+- Diagnóstico automático de la columna `Ubicación` en cada carga, que fue
+  lo que cerró PENDIENTE-018
+
+### Corregido
+- Tres funciones que corrían en Supabase sin reflejarse en `sql/`
+  (`extraer_medidas`, `enviar_solicitud_materiales`,
+  `cuerpo_correo_solicitud`) y la restricción de `orden_trabajo` opcional,
+  quedan versionadas
+- **Prefiltro de `buscar_materiales()` sin orden.** El `LIMIT 600` cortaba
+  sin `ORDER BY`: con más de 600 candidatos, Postgres descartaba dos
+  tercios al azar (medido: 1.884 candidatos para
+  `retenedor 110x142x15 MM`). Ahora ordena por conteo de coincidencias
+  (referencias, medidas, palabras) antes de cortar, no por similitud de
+  cadena completa, que penalizaba descripciones largas. Validado:
+  `retenedor 110x142x15` → puesto 1 de 1.884; `AC Rsc` → puesto 42 de
+  4.231. Ambos sobreviven el corte; lo que falta en cada uno es otro
+  pendiente ya documentado (vocabulario, PENDIENTE-016)
+
+### Verificado
+- 16 columnas en `inventario_materiales`, 0 sobrantes, función sin
+  referencias a los campos eliminados
+- Carga real de 54.494 filas con el reporte nuevo
+- El motor responde igual que antes del recorte
+
+### Decisiones adoptadas
+- **ADR-025** — Recorte del inventario a 10 columnas de SAP. Sustituye a
+  ADR-005 y absorbe ADR-009: `XCentro` ya no existe, así que no queda nada
+  que ignorar. Se conservan `Material`, `Texto breve de material`, los tres
+  stocks, `Centro`, `Almacén`, `Ubicación`, `Unidad medida base` y
+  `Nºmaterial antiguo`. Reversible: recuperar una columna cuesta un
+  `ALTER TABLE`, una línea en el importador y una carga
+
+### Resuelto
+- **PENDIENTE-018.** Los blancos de `Ubicación` son vacíos legítimos, no
+  supresión de repetidos: 13.615 repeticiones consecutivas lo descartan. La
+  proporción real es del 2,3 %, no del 17 % estimado
+
+### Conocido
+- **PENDIENTE-019.** La exportación del 10-09 salió sin el centro P210
+  (Bogotá), 11.505 filas. Se mantiene activa por decisión explícita: los
+  stocks de planta al día pesan más que la ausencia de una sede remota.
+  Mientras siga así, un material que solo exista en Bogotá devuelve «no
+  encontrado», en contra de RN-019
+- RN-012 valida que se carguen todas las filas del archivo, no que el
+  archivo contenga todo el catálogo. Una exportación filtrada de menos se
+  activa sin protestar
+
+---
 ## [v1.2.0] — 2026-08-26
 
 El aviso por correo pasa a funcionar de verdad. Hasta ahora la solicitud
