@@ -131,6 +131,7 @@ Ningún error crítico abierto puede quedar sin revisar antes de liberar una ver
 - [`docs/reglas-negocio.md`](docs/reglas-negocio.md)
 - [`docs/seguridad.md`](docs/seguridad.md)
 - [`docs/pendientes.md`](docs/pendientes.md)
+- [`docs/contrato-elsa.md`](docs/contrato-elsa.md) — contrato Materiales–ELSA y su gobernanza
 - [`docs/decisiones/`](docs/decisiones/) — decisiones de arquitectura (ADR)
 
 ## Responsable
