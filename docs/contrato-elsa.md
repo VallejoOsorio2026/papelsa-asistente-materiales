@@ -96,6 +96,18 @@ son peores que ninguna.
 
 ## Estado
 
-**PENDIENTE.** La definición canónica del contrato, el descriptor y las pruebas
-contractuales del proveedor **todavía no existen** en este repositorio. Este
-documento registra el rol y su ocupante; el resto es trabajo posterior.
+**Actualizado el 2026-09-23 por M1-C.**
+
+| Artefacto | Estado |
+|---|---|
+| Asignación del rol | **Existe.** Es este documento |
+| Definición canónica del contrato V1 | **Existe:** [`contrato-elsa-v1.md`](contrato-elsa-v1.md) |
+| `contract_version` | **Existe.** Vale `"1"`, y la emite la fachada |
+| Descriptor | **Existe:** `elsa_v1_get_contract_descriptor()` |
+| Pruebas contractuales del proveedor | **Existen:** [`tests/m1c_contrato_v1.sh`](../tests/m1c_contrato_v1.sh) |
+| **Despliegue en producción** | **PENDIENTE.** La fachada está versionada y probada en local; **no se ha aplicado** al proyecto Supabase |
+
+El texto de arriba decía que nada de esto existía, y describía correctamente el
+estado hasta M1-B. **M1-C lo cambió**, con una excepción que conviene no
+confundir: que el contrato esté escrito y probado no significa que esté vivo.
+Aplicarlo a producción es una decisión posterior y explícita.
