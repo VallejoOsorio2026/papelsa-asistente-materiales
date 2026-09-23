@@ -47,27 +47,34 @@ porque esa lógica es propiedad de Materiales.
 | `lookup_material_by_code` | `public.elsa_v1_lookup_material_by_code(text, text)` | **Sí** |
 | `get_inventory_status` | `public.elsa_v1_get_inventory_status(text)` | **Sí** |
 | `get_contract_descriptor` | `public.elsa_v1_get_contract_descriptor()` | **Sí** |
-| `search_materials_by_text` | — | **No.** Declarada, sin implementar |
+| `search_materials_by_text` | — | **No.** Definida en los ADR, sin implementar y **fuera del descriptor** |
 
-`search_materials_by_text` **no tiene RPC**. Está declarada en el descriptor con
-`available: false` y `transport_binding: null`. Habilitarla solo por simetría
-habría sido prometer algo que nadie cumple.
+`search_materials_by_text` **no tiene RPC y no aparece en el descriptor**.
+Sigue definida normativamente en los ADR de ELSA para el futuro, pero este
+descriptor enumera lo que ofrece, no lo que algún día ofrecerá. Habilitarla solo
+por simetría habría sido prometer algo que nadie cumple.
 
 ## 3. Descriptor
 
 ```json
 {
   "contract_version": "1",
-  "transport": "supabase_rpc_postgrest_https",
   "operations": [
-    {"name": "lookup_material_by_code",  "transport_binding": "rpc:elsa_v1_lookup_material_by_code",  "available": true,  "deprecated": false},
-    {"name": "get_inventory_status",     "transport_binding": "rpc:elsa_v1_get_inventory_status",     "available": true,  "deprecated": false},
-    {"name": "get_contract_descriptor",  "transport_binding": "rpc:elsa_v1_get_contract_descriptor",  "available": true,  "deprecated": false},
-    {"name": "search_materials_by_text", "transport_binding": null,                                   "available": false, "deprecated": false}
+    {"name": "lookup_material_by_code", "transport_binding": "/rest/v1/rpc/elsa_v1_lookup_material_by_code", "deprecated": false},
+    {"name": "get_inventory_status",    "transport_binding": "/rest/v1/rpc/elsa_v1_get_inventory_status",    "deprecated": false},
+    {"name": "get_contract_descriptor", "transport_binding": "/rest/v1/rpc/elsa_v1_get_contract_descriptor", "deprecated": false}
   ],
   "unsupported_fields": ["inventory.extracted_at"]
 }
 ```
+
+**El descriptor enumera únicamente las operaciones que esta fachada ofrece de
+verdad.** `search_materials_by_text` sigue definida normativamente para el
+futuro, pero **no figura aquí**: no tiene RPC, y listarla sería prometer una
+superficie que nadie puede llamar.
+
+Cada `transport_binding` es la **ruta HTTPS/PostgREST concreta** de la
+operación, que es lo que un consumidor necesita para invocarla.
 
 `contract_version` es una **cadena**, no un entero: permite cambios compatibles
 sin renumerar.
@@ -265,7 +272,7 @@ inventario.
 | Añadir un campo opcional a la respuesta | Compatible |
 | Añadir un parámetro opcional al request | Compatible |
 | Rellenar un campo reservado que valía nulo | Compatible |
-| Habilitar `search_materials_by_text` | Compatible: el descriptor ya la declara |
+| Habilitar `search_materials_by_text` | Compatible: añadir una operación al descriptor no rompe a ningún consumidor |
 | Quitar o renombrar un campo | **Incompatible** |
 | Cambiar el significado de un campo sin cambiar su nombre | **Incompatible, y el más peligroso**: invisible en un diff |
 | Cambiar la representación esperada de `material_code` | **Incompatible** |

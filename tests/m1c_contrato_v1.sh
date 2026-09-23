@@ -82,27 +82,48 @@ ok(not re.search(r"'contract_version',\s*1\b", sql),
 ok("'1.0'" not in sql, "no aparece la version inventada '1.0'")
 
 print()
-print("Descriptor")
+print("Descriptor: forma")
 desc = cuerpo("elsa_v1_get_contract_descriptor") or ""
-ok("'supabase_rpc_postgrest_https'" in desc,
-   "declara el transporte decidido en H3")
-for op in ("lookup_material_by_code", "get_inventory_status",
-           "get_contract_descriptor"):
-    ok(f"'rpc:elsa_v1_{op}'" in desc,
-       f"declara el enlace RPC concreto de {op}")
+ok("'contract_version', '1'" in desc, "declara contract_version '1'")
 ok("'inventory.extracted_at'" in desc,
    "declara inventory.extracted_at como no transportado")
+ok(desc.count("'unsupported_fields'") == 1, "unsupported_fields aparece una vez")
+# Solo extracted_at: los campos de coverage SI los transporta el
+# contrato, y llegan nulos por falta de metadata. Eso es un caso,
+# no una capacidad ausente, y no va en el descriptor.
+ok("coverage.observed_scope" not in desc,
+   "unsupported_fields no incluye campos de coverage")
+
+print()
+print("Descriptor: campos NO autorizados")
+ok(not re.search(r"'transport',\s", desc),
+   "NO existe un campo superior 'transport'")
+ok("'available'" not in desc, "NINGUNA operacion declara 'available'")
+
+print()
+print("Descriptor: operaciones ofrecidas")
+nombres = re.findall(r"'name',\s*'([a-z_]+)'", desc)
+ok(nombres == ["lookup_material_by_code",
+               "get_inventory_status",
+               "get_contract_descriptor"],
+   f"ofrece exactamente las tres operaciones disponibles (encontradas: {nombres})")
+ok("'search_materials_by_text'" not in
+   re.sub(r"--[^\n]*", "", desc),
+   "search_materials_by_text NO figura como operacion ofrecida")
+
+print()
+print("Descriptor: enlace de transporte")
+for op in ("lookup_material_by_code", "get_inventory_status",
+           "get_contract_descriptor"):
+    ok(f"'/rest/v1/rpc/elsa_v1_{op}'" in desc,
+       f"{op}: enlace a la ruta HTTPS/PostgREST concreta")
+ok("'rpc:elsa_v1" not in desc,
+   "no se usa la notacion 'rpc:<nombre>', que no es una ruta")
+ok("'deprecated',        false" in desc or "'deprecated', false" in desc,
+   "las operaciones declaran deprecated false")
 
 print()
 print("Busqueda textual NO habilitada")
-ok("'search_materials_by_text'" in desc,
-   "search_materials_by_text aparece declarada en el descriptor")
-m = re.search(r"'name',\s*'search_materials_by_text'.*?\)", desc, re.S)
-bloque = m.group(0) if m else ""
-ok("'available',         false" in bloque or "'available', false" in bloque,
-   "search_materials_by_text esta marcada como NO disponible")
-ok("'transport_binding', null" in bloque,
-   "search_materials_by_text no declara enlace de transporte")
 ok(not re.search(r"FUNCTION public\.elsa_v1_search", sql, re.I),
    "no existe RPC de busqueda textual: no se habilita por simetria")
 
@@ -343,7 +364,47 @@ else:
         ok(v == "REJECTED", "sin identidad valida responde REJECTED, no excepcion")
 
         v, e = psql("select public.elsa_v1_get_contract_descriptor()->>'contract_version'")
-        ok(v == "1", "el descriptor responde sin exigir identidad")
+        ok(v == "1", "el descriptor devuelve contract_version 1")
+
+        v, e = psql("select jsonb_typeof(public.elsa_v1_get_contract_descriptor()"
+                    "->'contract_version')")
+        ok(v == "string", "contract_version del descriptor es de tipo string")
+
+        # Las claves de nivel superior, sobre el JSON real y no sobre el texto.
+        v, e = psql("select string_agg(k, ',' order by k) from jsonb_object_keys("
+                    "public.elsa_v1_get_contract_descriptor()) k")
+        ok(v == "contract_version,operations,unsupported_fields",
+           f"el descriptor tiene exactamente tres claves superiores (tiene: {v})")
+        ok(v is not None and "transport" not in (v or "").split(","),
+           "el JSON real NO trae un campo superior 'transport'")
+
+        v, e = psql("select string_agg(o->>'name', ',') from jsonb_array_elements("
+                    "public.elsa_v1_get_contract_descriptor()->'operations') o")
+        ok(v == "lookup_material_by_code,get_inventory_status,get_contract_descriptor",
+           f"operations enumera solo las tres disponibles (tiene: {v})")
+
+        v, e = psql("select count(*) from jsonb_array_elements("
+                    "public.elsa_v1_get_contract_descriptor()->'operations') o "
+                    "where o ? 'available'")
+        ok(v == "0", "ninguna operacion del JSON real trae 'available'")
+
+        v, e = psql("select count(*) from jsonb_array_elements("
+                    "public.elsa_v1_get_contract_descriptor()->'operations') o "
+                    "where o->>'name' = 'search_materials_by_text'")
+        ok(v == "0", "search_materials_by_text no aparece en el JSON real")
+
+        v, e = psql("select string_agg(o->>'transport_binding', ',') from "
+                    "jsonb_array_elements(public.elsa_v1_get_contract_descriptor()"
+                    "->'operations') o")
+        ok(v == "/rest/v1/rpc/elsa_v1_lookup_material_by_code,"
+                "/rest/v1/rpc/elsa_v1_get_inventory_status,"
+                "/rest/v1/rpc/elsa_v1_get_contract_descriptor",
+           "los enlaces son rutas /rest/v1/rpc/... concretas")
+
+        v, e = psql("select public.elsa_v1_get_contract_descriptor()"
+                    "->>'unsupported_fields'")
+        ok(v == '["inventory.extracted_at"]',
+           f"unsupported_fields contiene solo inventory.extracted_at (tiene: {v})")
 
 print()
 if fallos:

@@ -44,10 +44,24 @@
 
 -- ============================================================
 -- get_contract_descriptor
--- Que version habla esta fachada y que ofrece.
--- Sin identidad: solo declara forma, no expone inventario.
+-- Que version habla esta fachada y que operaciones OFRECE.
+--
+-- Requiere sesion autenticada. No consulta ni expone datos de
+-- inventario: declara forma, no contenido.
+--
 -- La version nunca se adivina; si el descriptor no responde,
 -- el consumidor declara desconocida la version y se degrada.
+--
+-- El descriptor enumera UNICAMENTE las operaciones que esta
+-- fachada ofrece de verdad. search_materials_by_text sigue
+-- definida normativamente en los ADR para el futuro, pero no
+-- tiene RPC y no se ofrece aqui: listarla seria prometer una
+-- superficie que nadie puede llamar.
+--
+-- El enlace de transporte es la ruta HTTPS/PostgREST concreta
+-- de cada operacion, que es lo que un consumidor necesita para
+-- invocarla. El contrato no depende de esa ruta: cambiarla no
+-- redefine la semantica.
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.elsa_v1_get_contract_descriptor()
@@ -58,39 +72,30 @@ SET search_path TO 'public'
 AS $function$
   select jsonb_build_object(
     'contract_version', '1',
-    'transport',        'supabase_rpc_postgrest_https',
     'operations', jsonb_build_array(
       jsonb_build_object(
         'name',              'lookup_material_by_code',
-        'transport_binding', 'rpc:elsa_v1_lookup_material_by_code',
-        'available',         true,
+        'transport_binding', '/rest/v1/rpc/elsa_v1_lookup_material_by_code',
         'deprecated',        false
       ),
       jsonb_build_object(
         'name',              'get_inventory_status',
-        'transport_binding', 'rpc:elsa_v1_get_inventory_status',
-        'available',         true,
+        'transport_binding', '/rest/v1/rpc/elsa_v1_get_inventory_status',
         'deprecated',        false
       ),
       jsonb_build_object(
         'name',              'get_contract_descriptor',
-        'transport_binding', 'rpc:elsa_v1_get_contract_descriptor',
-        'available',         true,
-        'deprecated',        false
-      ),
-      -- Declarada en el contrato, NO disponible en el Piloto 0.1.
-      -- No existe RPC para ella, y por eso su enlace es nulo: un
-      -- enlace inventado aqui seria una promesa que nadie cumple.
-      jsonb_build_object(
-        'name',              'search_materials_by_text',
-        'transport_binding', null,
-        'available',         false,
+        'transport_binding', '/rest/v1/rpc/elsa_v1_get_contract_descriptor',
         'deprecated',        false
       )
     ),
     -- Lo que este contrato NO transporta se declara aqui, no
     -- omitiendo claves del payload. El descriptor declara la
     -- capacidad; un null clasificado declara el caso.
+    --
+    -- Solo extracted_at. Los cuatro campos de coverage SI los
+    -- transporta el contrato: llegan nulos por falta de metadata
+    -- de ingestion, que es un caso, no una capacidad ausente.
     'unsupported_fields', jsonb_build_array('inventory.extracted_at')
   );
 $function$;
