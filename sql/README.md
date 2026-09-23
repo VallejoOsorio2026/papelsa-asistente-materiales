@@ -53,12 +53,19 @@ diferencia.
 | 025 | correo | 024 |
 | 026 | area_almacen | 023 · ⚠️ el archivo no existe |
 | 035 | funciones_consulta | 002, 005, 007, 012, 013, 021, 030 |
+| 037 | contrato_elsa_v1 | 002, 005, 007, 030 · **el último** |
 
 Los archivos 030 a 036 son del bloque M1-B: objetos que ya
 existían en Supabase sin copia aquí, recuperados por
 introspección de solo lectura el 2026-09-22. Se numeraron
 después del último archivo existente, sin renumerar nada; su
 posición real es la de esta tabla.
+
+**037 es de M1-C y no pertenece a esa recuperación.** No
+reproduce nada que ya existiera: crea la fachada contractual
+Materiales–ELSA V1, que es superficie nueva. Va al final porque
+depende de objetos de M1-B —`es_material_baja` del 030— y de la
+identidad del 005.
 
 **024 y 036.** El 024 deja la orden de trabajo en 7 dígitos.
 Producción pasó después a 8 (restricción y función). El 036
