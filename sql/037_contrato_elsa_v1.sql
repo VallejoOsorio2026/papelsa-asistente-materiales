@@ -483,3 +483,17 @@ revoke all on function public._elsa_v1_inventory(uuid) from public;
 revoke all on function public._elsa_v1_inventory(uuid) from anon;
 revoke all on function public._elsa_v1_coverage() from public;
 revoke all on function public._elsa_v1_coverage() from anon;
+
+-- Supabase, ademas, concede EXECUTE a authenticated y
+-- service_role en toda funcion nueva creada por postgres en
+-- public (pg_default_acl: owner postgres, schema public, tipo f).
+-- Lo detecto el ensayo transaccional real en PostgreSQL 17.6.
+-- Se neutraliza aqui, sobre estas cinco funciones; los
+-- privilegios por defecto no se tocan.
+revoke all on function public.elsa_v1_get_contract_descriptor() from service_role;
+revoke all on function public.elsa_v1_get_inventory_status(text) from service_role;
+revoke all on function public.elsa_v1_lookup_material_by_code(text, text) from service_role;
+revoke all on function public._elsa_v1_inventory(uuid) from service_role;
+revoke all on function public._elsa_v1_coverage() from service_role;
+revoke all on function public._elsa_v1_inventory(uuid) from authenticated;
+revoke all on function public._elsa_v1_coverage() from authenticated;

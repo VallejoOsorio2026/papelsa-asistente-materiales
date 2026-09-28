@@ -255,9 +255,14 @@ todo acceso: sesión válida (`auth.uid()`) más perfil activo.
   credencial administrativa.
 - Sin secretos en código, documentación ni pruebas.
 - Sin bypass de RLS.
-- `EXECUTE` **solo para `authenticated`**, con `REVOKE` explícito a `public` y
-  `anon` — obligatorio, porque PostgreSQL concede `EXECUTE` a `PUBLIC` por
-  defecto en cada función nueva.
+- `EXECUTE` **solo para `authenticated`, y solo sobre las tres RPC públicas**.
+  Las internas `_elsa_v1_inventory` y `_elsa_v1_coverage` no son ejecutables
+  por ningún rol cliente, y `service_role` no recibe `EXECUTE` sobre ninguna de
+  las cinco. Los `REVOKE` explícitos son obligatorios: PostgreSQL concede
+  `EXECUTE` a `PUBLIC` en cada función nueva, y en Supabase `pg_default_acl`
+  (owner `postgres`, schema `public`) concede además `EXECUTE` a `anon`,
+  `authenticated` y `service_role`. `037` lo neutraliza sobre sus propias
+  funciones, sin modificar los privilegios por defecto.
 
 `get_contract_descriptor` no exige identidad: declara forma, no expone
 inventario.
