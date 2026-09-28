@@ -96,7 +96,7 @@ son peores que ninguna.
 
 ## Estado
 
-**Actualizado el 2026-09-23 por M1-C.**
+**Actualizado el 2026-09-28 por el cierre de M1-C.**
 
 | Artefacto | Estado |
 |---|---|
@@ -105,9 +105,8 @@ son peores que ninguna.
 | `contract_version` | **Existe.** Vale `"1"`, y la emite la fachada |
 | Descriptor | **Existe:** `elsa_v1_get_contract_descriptor()` |
 | Pruebas contractuales del proveedor | **Existen:** [`tests/m1c_contrato_v1.sh`](../tests/m1c_contrato_v1.sh) |
-| **Despliegue en producción** | **PENDIENTE.** La fachada está versionada y probada en local; **no se ha aplicado** al proyecto Supabase |
+| **Despliegue en producción** | **Desplegado el 2026-09-28** y validado por HTTPS con un usuario `authenticated` real: [cierre M1-C](project/closures/2026-09-28_M1-C_cierre.md) |
 
 El texto de arriba decía que nada de esto existía, y describía correctamente el
-estado hasta M1-B. **M1-C lo cambió**, con una excepción que conviene no
-confundir: que el contrato esté escrito y probado no significa que esté vivo.
-Aplicarlo a producción es una decisión posterior y explícita.
+estado hasta M1-B. **M1-C lo cambió**: primero escribió y probó el contrato, y
+después, como decisión posterior y explícita, lo aplicó a producción.
