@@ -250,6 +250,55 @@ ok("public.es_usuario_activo()" in sql,
    "reutiliza el control de identidad existente")
 
 print()
+print("Permisos: neutralizacion de pg_default_acl de Supabase")
+# En Supabase, pg_default_acl (owner postgres, schema public, tipo f)
+# concede EXECUTE a anon, authenticated y service_role en toda funcion
+# nueva. Revocar solo public y anon NO basta: lo demostro el ensayo
+# transaccional real en PostgreSQL 17.6. Estos controles exigen el
+# texto exacto de las revocaciones que lo neutralizan.
+PUBLICAS = (("elsa_v1_get_contract_descriptor", "()"),
+            ("elsa_v1_get_inventory_status", "(text)"),
+            ("elsa_v1_lookup_material_by_code", "(text, text)"))
+INTERNAS = (("_elsa_v1_inventory", "(uuid)"),
+            ("_elsa_v1_coverage", "()"))
+for f, firma in PUBLICAS + INTERNAS:
+    for rol in ("public", "anon", "service_role"):
+        ok(f"revoke all on function public.{f}{firma} from {rol};" in sql,
+           f"{f}: REVOKE a {rol}")
+for f, firma in INTERNAS:
+    ok(f"revoke all on function public.{f}{firma} from authenticated;" in sql,
+       f"{f}: REVOKE a authenticated (interna, no es fachada)")
+    ok(not re.search(r"grant\s[^;]*" + re.escape(f) + r"\b", sql, re.I),
+       f"{f}: ningun GRANT sobre la interna")
+for f, firma in PUBLICAS:
+    ok(f"revoke all on function public.{f}{firma} from authenticated;" not in sql,
+       f"{f}: authenticated conserva EXECUTE (no se revoca)")
+
+# Recuento de sentencias reales, sin cuerpos $function$, comentarios
+# ni literales de cadena (los COMMENT contienen ';' dentro del texto).
+limpio = re.sub(r"\$function\$.*?\$function\$", "$$", sql, flags=re.S)
+limpio = re.sub(r"--[^\n]*", "", limpio)
+limpio = re.sub(r"'(?:[^']|'')*'", "''", limpio)
+sentencias = [re.sub(r"\s+", " ", s).strip().lower()
+              for s in limpio.split(";") if s.strip()]
+def cuenta(prefijo):
+    return sum(1 for s in sentencias if s.startswith(prefijo))
+ok(cuenta("create or replace function") == 5, "exactamente 5 CREATE OR REPLACE FUNCTION")
+ok(cuenta("comment on function") == 5, "exactamente 5 COMMENT ON FUNCTION")
+ok(cuenta("revoke all on function") == 17,
+   f"exactamente 17 REVOKE (10 public/anon + 7 pg_default_acl) (hay {cuenta('revoke all on function')})")
+grants = [s for s in sentencias if s.startswith("grant")]
+ok(len(grants) == 3 and all(s.endswith(" to authenticated") for s in grants),
+   f"exactamente 3 GRANT, todos a authenticated (hay {len(grants)})")
+ok(len(sentencias) == 30,
+   f"30 sentencias reales en total, sin extras (hay {len(sentencias)})")
+ok(not any("service_role" in s for s in grants), "ningun GRANT menciona service_role")
+for prohibido in (r"alter\s+default\s+privileges", r"alter\s+role", r"alter\s+function",
+                  r"\bdrop\b", r"\bcascade\b"):
+    ok(not re.search(prohibido, limpio, re.I),
+       f"sin '{prohibido}' como sentencia real")
+
+print()
 print("Ausencia de secretos")
 for patron, etiqueta in (
         (r"sb_secret", "clave secreta de Supabase"),
@@ -405,6 +454,31 @@ else:
                     "->>'unsupported_fields'")
         ok(v == '["inventory.extracted_at"]',
            f"unsupported_fields contiene solo inventory.extracted_at (tiene: {v})")
+
+        # ACL efectiva sobre el catalogo real de la base de prueba.
+        # AVISO: la base local NO reproduce pg_default_acl de Supabase,
+        # asi que este bloque no prueba la neutralizacion de esos grants
+        # automaticos: eso lo cubren los controles estaticos de arriba y
+        # el ensayo transaccional real en PostgreSQL 17.6.
+        print()
+        print("ACL efectiva (base local; no reproduce pg_default_acl de Supabase)")
+        for f, firma in PUBLICAS + INTERNAS:
+            regp = f"public.{f}{firma.replace(' ', '')}"
+            v, e = psql("select count(*) from pg_proc p, aclexplode(coalesce("
+                        "p.proacl, acldefault('f', p.proowner))) a "
+                        f"where p.oid = to_regprocedure('{regp}') "
+                        "and a.grantee = 0 and a.privilege_type = 'EXECUTE'")
+            ok(v == "0", f"{f}: PUBLIC sin EXECUTE")
+            for rol in ("anon", "authenticated", "service_role"):
+                existe, e = psql(f"select to_regrole('{rol}') is not null")
+                if existe != "t":
+                    print(f"  omit  {f}: rol {rol} no existe en la base local")
+                    continue
+                v, e = psql(f"select has_function_privilege('{rol}', "
+                            f"to_regprocedure('{regp}'), 'EXECUTE')")
+                espera = "t" if (rol == "authenticated" and (f, firma) in PUBLICAS) else "f"
+                ok(v == espera,
+                   f"{f}: {rol} {'CON' if espera == 't' else 'sin'} EXECUTE (obtenido: {v})")
 
 print()
 if fallos:
