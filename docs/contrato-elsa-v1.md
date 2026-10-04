@@ -1,6 +1,6 @@
 # Contrato Materiales–ELSA V1 — definición canónica del proveedor
 
-**Versión:** `"1"` · **Estado:** implementado, pendiente de despliegue
+**Versión:** `"1"` · **Estado:** desplegado en producción el 2026-09-28 ([cierre M1-C](project/closures/2026-09-28_M1-C_cierre.md))
 **Transporte:** RPC de Supabase sobre HTTPS/PostgREST
 **Implementación:** [`sql/037_contrato_elsa_v1.sql`](../sql/037_contrato_elsa_v1.sql)
 **Pruebas del proveedor:** [`tests/m1c_contrato_v1.sh`](../tests/m1c_contrato_v1.sh)
